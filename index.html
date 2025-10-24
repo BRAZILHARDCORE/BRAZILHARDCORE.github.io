@@ -422,15 +422,7 @@
     }
 
     function drawEndFailScreen() {
-        // drawEndScreen("Sorry, you can't continue."); // No longer using this
-        drawText("Sorry, you can't continue.", baseWidth / 2, 300, 32);
-
-        // Add two centered, stacked buttons
-        const btnRestart = { id: 'restart', text: 'restart', x: baseWidth / 2 - 250, y: 550, w: 500, h: 100 };
-        const btnReady = { id: 'ready', text: 'I am ready now', x: baseWidth / 2 - 250, y: 670, w: 500, h: 100 };
-        drawButton(btnRestart.text, btnRestart.x, btnRestart.y, btnRestart.w, btnRestart.h, hoverTarget === btnRestart.id, false, btnRestart.id);
-        drawButton(btnReady.text, btnReady.x, btnReady.y, btnReady.w, btnReady.h, hoverTarget === btnReady.id, false, btnReady.id);
-        setRegions([btnRestart, btnReady]);
+        drawEndScreen("Sorry, you can't continue.");
     }
     
     function drawEndInternetScreen() {
@@ -441,12 +433,9 @@
         } else {
             drawText("Loading Greyscale...", baseWidth / 2, 300, 32);
         }
-        // Add two centered, stacked buttons
-        const btnRestart = { id: 'restart', text: 'restart', x: baseWidth / 2 - 250, y: 550, w: 500, h: 100 };
-        const btnReady = { id: 'ready', text: 'I am ready now', x: baseWidth / 2 - 250, y: 670, w: 500, h: 100 };
-        drawButton(btnRestart.text, btnRestart.x, btnRestart.y, btnRestart.w, btnRestart.h, hoverTarget === btnRestart.id, false, btnRestart.id);
-        drawButton(btnReady.text, btnReady.x, btnReady.y, btnReady.w, btnReady.h, hoverTarget === btnReady.id, false, btnReady.id);
-        setRegions([btnRestart, btnReady]);
+        const btn = { id: 'restart', text: 'RESTART', x: baseWidth / 2 - 200, y: 700, w: 400, h: 80 };
+        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
+        setRegions([btn]);
     }
 
     function drawEndLostScreen() {
@@ -457,12 +446,9 @@
         } else {
             drawText("Loading butter...", baseWidth / 2, 300, 32);
         }
-        // Add two centered, stacked buttons
-        const btnRestart = { id: 'restart', text: 'restart', x: baseWidth / 2 - 250, y: 550, w: 500, h: 100 };
-        const btnReady = { id: 'ready', text: 'I am ready now', x: baseWidth / 2 - 250, y: 670, w: 500, h: 100 };
-        drawButton(btnRestart.text, btnRestart.x, btnRestart.y, btnRestart.w, btnRestart.h, hoverTarget === btnRestart.id, false, btnRestart.id);
-        drawButton(btnReady.text, btnReady.x, btnReady.y, btnReady.w, btnReady.h, hoverTarget === btnReady.id, false, btnReady.id);
-        setRegions([btnRestart, btnReady]);
+        const btn = { id: 'restart', text: 'RESTART', x: baseWidth / 2 - 200, y: 700, w: 400, h: 80 };
+        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
+        setRegions([btn]);
     }
 
     function drawEndAlbanianScreen() {
@@ -473,12 +459,9 @@
         } else {
             drawText("Loading albanian...", baseWidth / 2, 300, 32);
         }
-        // Add two centered, stacked buttons
-        const btnRestart = { id: 'restart', text: 'restart', x: baseWidth / 2 - 250, y: 550, w: 500, h: 100 };
-        const btnReady = { id: 'ready', text: 'I am ready now', x: baseWidth / 2 - 250, y: 670, w: 500, h: 100 };
-        drawButton(btnRestart.text, btnRestart.x, btnRestart.y, btnRestart.w, btnRestart.h, hoverTarget === btnRestart.id, false, btnRestart.id);
-        drawButton(btnReady.text, btnReady.x, btnReady.y, btnReady.w, btnReady.h, hoverTarget === btnReady.id, false, btnReady.id);
-        setRegions([btnRestart, btnReady]);
+        const btn = { id: 'restart', text: 'RESTART', x: baseWidth / 2 - 200, y: 700, w: 400, h: 80 };
+        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
+        setRegions([btn]);
     }
 
     // --- Core Logic ---
@@ -568,12 +551,7 @@
                     case GAME_STATES.END_INTERNET:
                     case GAME_STATES.END_LOST:
                     case GAME_STATES.END_ALBANIAN:
-                        // if (region.id === 'restart') initializeGame();
-                        if (region.id === 'restart') {
-                            initializeGame();
-                        } else if (region.id === 'ready') {
-                            window.location.href = 'https://www.shopify.com/de';
-                        }
+                        if (region.id === 'restart') initializeGame();
                         break;
                 }
                 return; // Exit after processing click
@@ -589,7 +567,7 @@
         ctx.strokeRect(x,y,w,h);
         
         let fontSize = 24; // Larger base font for mobile buttons
-        if(text.length > 10) fontSize = 20; // Adjusted font size
+        if(text.length > 10) fontSize = 16;
         if(text.length > 20) fontSize = 12;
 
         drawText(text, x + w/2, y + h/2 + 4, fontSize, isHovered || isDone ? '#000' : '#fff');
@@ -660,4 +638,3 @@
 
 </body>
 </html>
-
