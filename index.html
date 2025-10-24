@@ -2,106 +2,69 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- This viewport tag is essential for mobile responsiveness -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bui Project - The Adventure</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Bui Project - The Adventure (Mobile)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* Make body fill the entire screen */
-        body, html {
-            background-color: #1a1a1a;
+        /* Reset margins and padding for a full-screen experience */
+        html, body {
+            background-color: #000;
             color: #fff;
-            font-family: 'Press Start 2P', cursive;
+            font-family: 'Press+Start+2P', cursive;
             display: flex;
             justify-content: center;
             align-items: center;
-            width: 100vw;
-            height: 100vh;
+            height: 100%;
+            width: 100%;
             margin: 0;
             padding: 0;
             overflow: hidden; /* Prevent scrolling */
         }
 
-        /* This container will scale down while maintaining its aspect ratio */
         .game-container {
-            border: 8px solid #444;
-            border-radius: 15px;
+            border: none; /* Remove desktop border */
+            border-radius: 0;
             background-color: #000;
-            box-shadow: 0 0 25px #ff00ff, 0 0 15px #00ffff inset;
+            padding: 0;
+            box-shadow: none; /* Remove desktop shadow */
             position: relative;
-            
-            /* Sizing magic */
-            width: 100%;
-            height: 100%;
-            /* Set max size to the game's internal resolution */
-            max-width: 1200px; 
-            /* Enforce the 1200/800 aspect ratio */
-            aspect-ratio: 1200 / 800; 
+            width: 100vw; /* Fill width */
+            height: 100vh; /* Fill height */
+            box-sizing: border-box;
         }
 
         canvas {
             background-color: #0d0d0d;
             display: block;
-            border-radius: 5px;
-            
-            /* Make canvas fill its container */
-            width: 100%;
-            height: 100%;
-            
-            /* IMPORTANT: Prevents touch-scrolling/zooming on the canvas */
-            touch-action: none; 
-        }
-        
-        /* This is the "Flip your phone" screen */
-        #rotate-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #000;
-            z-index: 100;
-            display: none; /* Hidden by default */
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 20px;
-        }
-
-        /* This media query shows the overlay ONLY in portrait mode */
-        @media (orientation: portrait) {
-            #rotate-overlay {
-                display: flex;
-            }
-            .game-container {
-                display: none; /* Hide the game in portrait */
-            }
+            border: none;
+            border-radius: 0;
+            cursor: pointer;
+            width: 100%; /* Canvas fills container */
+            height: 100%; /* Canvas fills container */
+            touch-action: none; /* Disable double-tap zoom etc. */
         }
         
     </style>
 </head>
 <body>
-
-    <!-- This overlay will show on phones in portrait mode -->
-    <div id="rotate-overlay">
-        <h1 style="font-size: 18px; line-height: 1.5em; color: #00ff00;">
-            FLIP YOUR PHONE
-        </h1>
-        <p style="font-size: 14px;">(This adventure requires landscape mode)</p>
-    </div>
-
-    <!-- The game container is hidden in portrait mode by the CSS above -->
     <div class="game-container" id="game-container">
-        <!-- The internal resolution is still 1200x800, but CSS scales the canvas -->
-        <canvas id="gameCanvas" width="1200" height="800"></canvas>
+        <!-- Canvas width and height will be set by JavaScript -->
+        <canvas id="gameCanvas"></canvas>
     </div>
 
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
+
+    // --- Base coordinate system ---
+    const baseWidth = 1200;
+    const baseHeight = 800;
+    let scale = 1;
+    let offsetX = 0;
+    let offsetY = 0;
+
 
     // --- Image Preloading ---
     let imgGreyscale = new Image();
@@ -147,6 +110,22 @@
     let animationState = {};
     let clickRegions = {};
     let isGameActive = true;
+
+    // --- Canvas Setup and Scaling ---
+    function setupCanvas() {
+        // Set canvas to physical pixel size
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Calculate scale to fit and maintain aspect ratio
+        scale = Math.min(canvas.width / baseWidth, canvas.height / baseHeight);
+
+        // Calculate centered offsets
+        const newWidth = baseWidth * scale;
+        const newHeight = baseHeight * scale;
+        offsetX = (canvas.width - newWidth) / 2;
+        offsetY = (canvas.height - newHeight) / 2;
+    }
     
     function setRegions(regions) {
         clickRegions[gameState] = regions;
@@ -158,8 +137,7 @@
     }
 
     // --- Drawing Assets ---
-    // All drawing functions (drawInternetAddict, drawLost, etc.)
-    // remain EXACTLY THE SAME as they draw to the internal 1200x800 canvas.
+    // (All drawing functions remain the same as they use the 1200x800 coordinate system)
 
     function drawInternetAddict(x, y, frame) {
         ctx.save();
@@ -173,13 +151,15 @@
         ctx.fill();
 
         // Phone
+        // Apply glowing effect to phone
         const glowAlpha = Math.abs(Math.sin(frame * 0.05)); // Pulsating glow
         ctx.shadowColor = `rgba(0, 255, 0, ${glowAlpha})`;
         ctx.shadowBlur = 15;
-        ctx.fillStyle = '#00ff00'; // Neon green
+        ctx.fillStyle = '#00ff00'; // Neon green for the glowing phone
         ctx.fillRect(160, 100, 30, 50); // Phone body
-        ctx.shadowBlur = 0; 
+        ctx.shadowBlur = 0; // Reset shadow for other drawings
 
+        // Phone screen (darker green inside the glowing phone)
         ctx.fillStyle = '#008800'; 
         ctx.fillRect(165, 105, 20, 40); 
 
@@ -187,8 +167,9 @@
         ctx.strokeStyle = `rgba(200, 200, 255, 0.6)`;
         ctx.lineWidth = 5;
         ctx.beginPath();
-        ctx.moveTo(100, 25); // From head
+        ctx.moveTo(100, 25); // From character's head
         
+        // Connect to the phone
         const phoneCenterX = 160 + 15;
         const phoneCenterY = 100 + 25;
         const numSegments = 30;
@@ -196,7 +177,7 @@
             const t = i / numSegments;
             const currentX = 100 + (phoneCenterX - 100) * t;
             const currentY = 25 + (phoneCenterY - 25) * t;
-            const wave = Math.sin((i * 0.5) + frame * 0.1) * (1 - t) * 10;
+            const wave = Math.sin((i * 0.5) + frame * 0.1) * (1 - t) * 10; // Wave decreases as it reaches the phone
             ctx.lineTo(currentX + wave, currentY);
         }
         ctx.stroke();
@@ -246,36 +227,53 @@
     function drawAlbanianFlag(x, y, frame) {
         ctx.save();
         ctx.translate(x, y);
-        ctx.fillStyle = '#8B4513'; // Pole
+
+        // Pole
+        ctx.fillStyle = '#8B4513'; // Brown
         ctx.fillRect(0, 0, 10, 200);
-        ctx.fillStyle = '#FF0000'; // Flag
+
+        // Waving flag
+        ctx.fillStyle = '#FF0000'; // Red
         ctx.beginPath();
-        ctx.moveTo(10, 10);
+        ctx.moveTo(10, 10); // Top left
+        
         let wavePath = [];
         for (let i = 0; i <= 200; i+=10) {
             const wave = Math.sin((i / 50) + frame * 0.05) * 10;
-            ctx.lineTo(10 + i, 10 + wave);
+            if(i === 0) ctx.lineTo(10 + i, 10 + wave);
+            else ctx.lineTo(10 + i, 10 + wave);
             wavePath.push({x: 10 + i, y: 10 + wave});
         }
+        
         const lastWave = wavePath[wavePath.length - 1];
-        ctx.lineTo(lastWave.x, lastWave.y + 130);
+        ctx.lineTo(lastWave.x, lastWave.y + 130); // Top right to bottom right
+
         for (let i = wavePath.length - 1; i >= 0; i--) {
              ctx.lineTo(wavePath[i].x, wavePath[i].y + 130);
         }
+
         ctx.closePath();
         ctx.fill();
         
         // Simplified Eagle
         ctx.fillStyle = '#000000';
+        
+        // Calculate center of flag with wave
         const waveOffset = Math.sin((100 / 50) + frame * 0.05) * 10;
-        const cx = 10 + 100; // center x
-        const cy = 10 + waveOffset + 65; // center y
+        const cx = 10 + 100; // 100 is halfway across 200 width
+        const cy = 10 + waveOffset + 65; // 65 is halfway down 130 height
+
+        // Draw eagle relative to waving center
         ctx.beginPath();
-        ctx.fillRect(cx - 10, cy - 15, 20, 30); // Body
-        ctx.fillRect(cx - 25, cy - 35, 15, 20); // Head 1
-        ctx.fillRect(cx + 10, cy - 35, 15, 20); // Head 2
-        ctx.fillRect(cx - 30, cy - 30, 5, 5); // Beak 1
-        ctx.fillRect(cx + 25, cy - 30, 5, 5); // Beak 2
+        // Body
+        ctx.fillRect(cx - 10, cy - 15, 20, 30);
+        // Heads
+        ctx.fillRect(cx - 25, cy - 35, 15, 20);
+        ctx.fillRect(cx + 10, cy - 35, 15, 20);
+        // Beaks
+        ctx.fillRect(cx - 30, cy - 30, 5, 5);
+        ctx.fillRect(cx + 25, cy - 30, 5, 5);
+        // Wings
         ctx.moveTo(cx - 10, cy - 10); ctx.lineTo(cx - 50, cy - 30); ctx.lineTo(cx - 40, cy + 20); ctx.closePath();
         ctx.moveTo(cx + 10, cy - 10); ctx.lineTo(cx + 50, cy - 30); ctx.lineTo(cx + 40, cy + 20); ctx.closePath();
         ctx.fill();
@@ -286,16 +284,19 @@
     function drawBrazilianFlag(x, y, frame) {
         ctx.save();
         ctx.translate(x, y);
-        ctx.fillStyle = '#8B4513'; // Pole
+
+        // Pole
+        ctx.fillStyle = '#8B4513'; // Brown
         ctx.fillRect(0, 0, 10, 200);
 
-        // Waving flag base (Green)
+        // Waving flag base (Green Rectangle)
         ctx.beginPath();
         ctx.moveTo(10, 10);
         let wavePath = [];
         for (let i = 0; i <= 200; i+=10) {
             const wave = Math.sin((i / 50) + frame * 0.05) * 10;
-            ctx.lineTo(10 + i, 10 + wave);
+            if(i === 0) ctx.lineTo(10 + i, 10 + wave);
+            else ctx.lineTo(10 + i, 10 + wave);
             wavePath.push({x: 10 + i, y: 10 + wave});
         }
         const lastWave = wavePath[wavePath.length - 1];
@@ -307,9 +308,9 @@
         ctx.fillStyle = '#009739'; // Green
         ctx.fill();
         
-        // Yellow Rhombus
+        // Yellow Rhombus (Diamond) - positioned relative to the wave
         const rhombusCX = 10 + 100;
-        const waveOffset = Math.sin((100 / 50) + frame * 0.05) * 10;
+        const waveOffset = Math.sin((100 / 50) + frame * 0.05) * 10; // Wave at center x
         const rhombusCY = 10 + 65 + waveOffset; 
         const widthFactor = 0.8;
         const heightFactor = 0.8;
@@ -317,23 +318,23 @@
         ctx.fillStyle = '#FFDD00'; // Yellow
         ctx.beginPath();
         ctx.moveTo(rhombusCX, rhombusCY - (65 * heightFactor)); // Top
-        ctx.lineTo(rhombusCX + (100 * widthFactor), rhombusCY);   // Right
+        ctx.lineTo(rhombusCX + (100 * widthFactor), rhombusCY);     // Right
         ctx.lineTo(rhombusCX, rhombusCY + (65 * heightFactor)); // Bottom
-        ctx.lineTo(rhombusCX - (100 * widthFactor), rhombusCY);   // Left
+        ctx.lineTo(rhombusCX - (100 * widthFactor), rhombusCY);     // Left
         ctx.closePath();
         ctx.fill();
 
-        // Blue Circle
+        // Blue Circle - positioned relative to the wave
         ctx.fillStyle = '#012169'; // Dark Blue
         ctx.beginPath();
         ctx.arc(rhombusCX, rhombusCY, 40, 0, Math.PI * 2);
         ctx.fill();
 
-        // White band (simplified)
+        // White band (simplified) - positioned relative to the wave
         ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(rhombusCX - 40, rhombusCY - 5, 80, 10);
+        ctx.fillRect(rhombusCX - 40, rhombusCY - 5, 80, 10); // Simplified band
         
-        // Stars (simplified)
+        // Stars (simplified) - positioned relative to the wave
         ctx.fillStyle = '#FFFFFF';
         ctx.beginPath();
         ctx.arc(rhombusCX - 20, rhombusCY - 20, 3, 0, Math.PI * 2);
@@ -342,63 +343,69 @@
         ctx.arc(rhombusCX + 25, rhombusCY + 25, 3, 0, Math.PI * 2);
         ctx.fill();
 
+
         ctx.restore();
     }
 
 
-    // --- State Drawing Functions ---
-    // All drawing functions (drawStartScreen, drawQ1Screen, etc.)
-    // remain EXACTLY THE SAME.
-
+    // --- State Drawing Functions (Modified for Mobile Layout) ---
     function drawStartScreen() {
-        drawText("ARE YOU READY?", canvas.width / 2, 300, 40);
-        const btn = { id: 'start', text: 'Fuck no', x: canvas.width / 2 - 150, y: 450, w: 300, h: 80 };
+        drawText("ARE YOU READY?", baseWidth / 2, 300, 40);
+        const btn = { id: 'start', text: 'Fuck no', x: baseWidth / 2 - 200, y: 450, w: 400, h: 100 };
         drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
         setRegions([btn]);
     }
 
     function drawQ1Screen() {
-        drawText("ARE YOU HARDCORE.", canvas.width / 2, 300, 32);
-        const btnYes = { id: 'yes', text: 'YES', x: canvas.width / 2 - 350, y: 450, w: 300, h: 80 };
-        const btnNo = { id: 'no', text: 'NO', x: canvas.width / 2 + 50, y: 450, w: 300, h: 80 };
+        drawText("ARE YOU HARDCORE.", baseWidth / 2, 300, 32);
+        // Stacked buttons for mobile
+        const btnYes = { id: 'yes', text: 'YES', x: baseWidth / 2 - 200, y: 400, w: 400, h: 100 };
+        const btnNo = { id: 'no', text: 'NO', x: baseWidth / 2 - 200, y: 520, w: 400, h: 100 };
         drawButton(btnYes.text, btnYes.x, btnYes.y, btnYes.w, btnYes.h, hoverTarget === btnYes.id, false, btnYes.id);
         drawButton(btnNo.text, btnNo.x, btnNo.y, btnNo.w, btnNo.h, hoverTarget === btnNo.id, false, btnNo.id);
         setRegions([btnYes, btnNo]);
     }
 
     function drawQ2Screen() {
-        drawText("ARE YOU THE BADDEST OF THEM ALL.", canvas.width / 2, 300, 32);
-        const btnYes = { id: 'yes', text: 'YES', x: canvas.width / 2 - 350, y: 450, w: 300, h: 80 };
-        const btnNo = { id: 'no', text: 'NO', x: canvas.width / 2 + 50, y: 450, w: 300, h: 80 };
+        drawText("ARE YOU THE BADDEST OF THEM ALL.", baseWidth / 2, 300, 32);
+        // Stacked buttons for mobile
+        const btnYes = { id: 'yes', text: 'YES', x: baseWidth / 2 - 200, y: 400, w: 400, h: 100 };
+        const btnNo = { id: 'no', text: 'NO', x: baseWidth / 2 - 200, y: 520, w: 400, h: 100 };
         drawButton(btnYes.text, btnYes.x, btnYes.y, btnYes.w, btnYes.h, hoverTarget === btnYes.id, false, btnYes.id);
         drawButton(btnNo.text, btnNo.x, btnNo.y, btnNo.w, btnNo.h, hoverTarget === btnNo.id, false, btnNo.id);
         setRegions([btnYes, btnNo]);
     }
 
     function drawQ3Screen() {
-        drawText("ARE YOU:", canvas.width / 2, 150, 32);
+        drawText("ARE YOU:", baseWidth / 2, 80, 32);
+
+        // Stacked options for mobile
+        const regionWidth = 200;
+        const regionHeight = 230;
+        const centerX = (baseWidth - regionWidth) / 2; // Center = 500
 
         const regions = [
-            { id: 'internet', x: 150, y: 300, w: 200, h: 250 },
-            { id: 'albanian', x: 500, y: 300, w: 200, h: 250 },
-            { id: 'lost', x: 850, y: 300, w: 200, h: 250 },
+            { id: 'internet', x: centerX, y: 120, w: regionWidth, h: regionHeight },
+            { id: 'albanian', x: centerX, y: 350, w: regionWidth, h: regionHeight }, // Albanian/Brazilian in the middle
+            { id: 'lost', x: centerX, y: 580, w: regionWidth, h: regionHeight },
         ];
 
         drawInternetAddict(regions[0].x, regions[0].y, animationState.frame);
 
-        // Glitching flag logic
-        if (Math.random() < 0.15) { 
+        // Glitching Albanian/Brazilian flag logic - REVERSED
+        if (Math.random() < 0.15) { // 15% chance to glitch to Albanian flag
             drawAlbanianFlag(regions[1].x, regions[1].y, animationState.frame);
         } else {
             drawBrazilianFlag(regions[1].x, regions[1].y, animationState.frame);
         }
         drawText("Secretly Albanian", regions[1].x + 100, regions[1].y + 230, 14);
 
+
         drawLost(regions[2].x, regions[2].y, animationState.frame);
 
         regions.forEach(region => {
             if (hoverTarget === region.id) {
-                ctx.strokeStyle = '#00ff00';
+                ctx.strokeStyle = '#00ff00'; /* Neon Green */
                 ctx.lineWidth = 4;
                 ctx.strokeRect(region.x - 10, region.y - 10, region.w + 20, region.h + 20);
             }
@@ -408,63 +415,87 @@
     }
     
     function drawEndScreen(message) {
-        drawText(message, canvas.width / 2, 300, 32);
-        const btn = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 150, y: 450, w: 300, h: 80 };
+        drawText(message, baseWidth / 2, 300, 32);
+        const btn = { id: 'restart', text: 'RESTART', x: baseWidth / 2 - 200, y: 450, w: 400, h: 100 };
         drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
         setRegions([btn]);
     }
 
     function drawEndFailScreen() {
-        drawEndScreen("Sorry, you can't continue.");
+        // drawEndScreen("Sorry, you can't continue."); // No longer using this
+        drawText("Sorry, you can't continue.", baseWidth / 2, 300, 32);
+
+        // Add two centered, stacked buttons
+        const btnRestart = { id: 'restart', text: 'restart', x: baseWidth / 2 - 250, y: 550, w: 500, h: 100 };
+        const btnReady = { id: 'ready', text: 'I am ready now', x: baseWidth / 2 - 250, y: 670, w: 500, h: 100 };
+        drawButton(btnRestart.text, btnRestart.x, btnRestart.y, btnRestart.w, btnRestart.h, hoverTarget === btnRestart.id, false, btnRestart.id);
+        drawButton(btnReady.text, btnReady.x, btnReady.y, btnReady.w, btnReady.h, hoverTarget === btnReady.id, false, btnReady.id);
+        setRegions([btnRestart, btnReady]);
     }
     
     function drawEndInternetScreen() {
         if (imagesLoaded.greyscale === true) {
-            ctx.drawImage(imgGreyscale, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(imgGreyscale, 0, 0, baseWidth, baseHeight); // Draw to base coordinates
         } else if (imagesLoaded.greyscale === 'error') {
-            drawText("Error loading Greyscale", canvas.width / 2, 300, 32, '#ff0000');
+            drawText("Error loading Greyscale", baseWidth / 2, 300, 32, '#ff0000');
         } else {
-            drawText("Loading Greyscale...", canvas.width / 2, 300, 32);
+            drawText("Loading Greyscale...", baseWidth / 2, 300, 32);
         }
-        const btn = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 150, y: 700, w: 300, h: 80 };
-        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
-        setRegions([btn]);
+        // Add two centered, stacked buttons
+        const btnRestart = { id: 'restart', text: 'restart', x: baseWidth / 2 - 250, y: 550, w: 500, h: 100 };
+        const btnReady = { id: 'ready', text: 'I am ready now', x: baseWidth / 2 - 250, y: 670, w: 500, h: 100 };
+        drawButton(btnRestart.text, btnRestart.x, btnRestart.y, btnRestart.w, btnRestart.h, hoverTarget === btnRestart.id, false, btnRestart.id);
+        drawButton(btnReady.text, btnReady.x, btnReady.y, btnReady.w, btnReady.h, hoverTarget === btnReady.id, false, btnReady.id);
+        setRegions([btnRestart, btnReady]);
     }
 
     function drawEndLostScreen() {
         if (imagesLoaded.butter === true) {
-            ctx.drawImage(imgButter, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(imgButter, 0, 0, baseWidth, baseHeight);
         } else if (imagesLoaded.butter === 'error') {
-            drawText("Error loading butter", canvas.width / 2, 300, 32, '#ff0000');
+            drawText("Error loading butter", baseWidth / 2, 300, 32, '#ff0000');
         } else {
-            drawText("Loading butter...", canvas.width / 2, 300, 32);
+            drawText("Loading butter...", baseWidth / 2, 300, 32);
         }
-        const btn = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 150, y: 700, w: 300, h: 80 };
-        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
-        setRegions([btn]);
+        // Add two centered, stacked buttons
+        const btnRestart = { id: 'restart', text: 'restart', x: baseWidth / 2 - 250, y: 550, w: 500, h: 100 };
+        const btnReady = { id: 'ready', text: 'I am ready now', x: baseWidth / 2 - 250, y: 670, w: 500, h: 100 };
+        drawButton(btnRestart.text, btnRestart.x, btnRestart.y, btnRestart.w, btnRestart.h, hoverTarget === btnRestart.id, false, btnRestart.id);
+        drawButton(btnReady.text, btnReady.x, btnReady.y, btnReady.w, btnReady.h, hoverTarget === btnReady.id, false, btnReady.id);
+        setRegions([btnRestart, btnReady]);
     }
 
     function drawEndAlbanianScreen() {
         if (imagesLoaded.albanian === true) {
-            ctx.drawImage(imgAlbanian, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(imgAlbanian, 0, 0, baseWidth, baseHeight);
         } else if (imagesLoaded.albanian === 'error') {
-            drawText("Error loading albanian", canvas.width / 2, 300, 32, '#ff0000');
+            drawText("Error loading albanian", baseWidth / 2, 300, 32, '#ff0000');
         } else {
-            drawText("Loading albanian...", canvas.width / 2, 300, 32);
+            drawText("Loading albanian...", baseWidth / 2, 300, 32);
         }
-        const btn = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 150, y: 700, w: 300, h: 80 };
-        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
-        setRegions([btn]);
+        // Add two centered, stacked buttons
+        const btnRestart = { id: 'restart', text: 'restart', x: baseWidth / 2 - 250, y: 550, w: 500, h: 100 };
+        const btnReady = { id: 'ready', text: 'I am ready now', x: baseWidth / 2 - 250, y: 670, w: 500, h: 100 };
+        drawButton(btnRestart.text, btnRestart.x, btnRestart.y, btnRestart.w, btnRestart.h, hoverTarget === btnRestart.id, false, btnRestart.id);
+        drawButton(btnReady.text, btnReady.x, btnReady.y, btnReady.w, btnReady.h, hoverTarget === btnReady.id, false, btnReady.id);
+        setRegions([btnRestart, btnReady]);
     }
 
     // --- Core Logic ---
     function gameLoop() {
         if (!isGameActive) {
-            return; 
+            return; // Stop the loop if the game is not active
         }
+
+        // Clear the *entire* physical canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        animationState.frame++;
         
+        // Save context, apply scaling and offset
+        ctx.save();
+        ctx.translate(offsetX, offsetY);
+        ctx.scale(scale, scale);
+
+        // --- Draw game elements inside the 1200x800 coordinate system ---
         switch (gameState) {
             case GAME_STATES.START: drawStartScreen(); break;
             case GAME_STATES.Q1: drawQ1Screen(); break;
@@ -475,42 +506,47 @@
             case GAME_STATES.END_LOST: drawEndLostScreen(); break;
             case GAME_STATES.END_ALBANIAN: drawEndAlbanianScreen(); break;
         }
+
+        // Restore context to remove scaling
+        ctx.restore();
+        
         requestAnimationFrame(gameLoop);
     }
     
-    // --- NEW: Event Handlers ---
-
-    /**
-     * This function converts on-screen click/touch coordinates to the
-     * internal 1200x800 canvas coordinates. This is the key to
-     * making the game responsive.
-     */
-    function getScaledCoords(event) {
+    // --- Event Handlers (Updated for Scaling and Touch) ---
+    function getTransformedCoords(event) {
+        event.preventDefault();
         const rect = canvas.getBoundingClientRect();
-        // Calculate the ratio between the internal size (1200) and the displayed size
-        const scaleX = canvas.width / rect.width; 
-        const scaleY = canvas.height / rect.height;
+        let clientX, clientY;
 
-        // Get the x/y of the event relative to the canvas element
-        const x = (event.clientX - rect.left) * scaleX;
-        const y = (event.clientY - rect.top) * scaleY;
-        
-        return { x, y };
+        if (event.type.startsWith('touch')) {
+            clientX = (event.touches[0] || event.changedTouches[0]).clientX;
+            clientY = (event.touches[0] || event.changedTouches[0]).clientY;
+        } else {
+            clientX = event.clientX;
+            clientY = event.clientY;
+        }
+
+        const mouseX_raw = clientX - rect.left;
+        const mouseY_raw = clientY - rect.top;
+
+        // Reverse the scaling and offset
+        const mouseX = (mouseX_raw - offsetX) / scale;
+        const mouseY = (mouseY_raw - offsetY) / scale;
+
+        return { mouseX, mouseY };
     }
 
-    // This function handles the "click" or "tap" action
-    function handlePointerUp(event) {
+    function handleClick(event) {
         if (!isGameActive) return;
-        event.preventDefault();
         
-        const { x: mouseX, y: mouseY } = getScaledCoords(event);
+        const { mouseX, mouseY } = getTransformedCoords(event);
 
         const regions = clickRegions[gameState] || [];
         for (const region of regions) {
             if (mouseX >= region.x && mouseX <= region.x + region.w &&
                 mouseY >= region.y && mouseY <= region.y + region.h) {
                 
-                // This logic is identical to your original handleClick
                 switch(gameState) {
                     case GAME_STATES.START:
                         if (region.id === 'start') gameState = GAME_STATES.Q1;
@@ -532,68 +568,29 @@
                     case GAME_STATES.END_INTERNET:
                     case GAME_STATES.END_LOST:
                     case GAME_STATES.END_ALBANIAN:
-                        if (region.id === 'restart') initializeGame();
+                        // if (region.id === 'restart') initializeGame();
+                        if (region.id === 'restart') {
+                            initializeGame();
+                        } else if (region.id === 'ready') {
+                            window.location.href = 'https://www.shopify.com/de';
+                        }
                         break;
                 }
-                hoverTarget = null; // Clear hover after click
                 return; // Exit after processing click
             }
         }
     }
     
-    // This function handles mouse hover and touch-down highlighting
-    function handlePointerMove(event) {
-        if (!isGameActive) return;
-        event.preventDefault();
-
-        const { x: mouseX, y: mouseY } = getScaledCoords(event);
-        const regions = clickRegions[gameState] || [];
-        
-        let onTarget = false;
-        for (const region of regions) {
-             if (mouseX >= region.x && mouseX <= region.x + region.w &&
-                 mouseY >= region.y && mouseY <= region.y + region.h) {
-                 hoverTarget = region.id;
-                 canvas.style.cursor = 'pointer';
-                 onTarget = true;
-                 break;
-             }
-        }
-        
-        if (!onTarget) {
-            hoverTarget = null;
-            canvas.style.cursor = 'default';
-        }
-    }
-    
-    // This function handles the "down" state for touch, giving immediate feedback
-    function handlePointerDown(event) {
-         if (!isGameActive) return;
-        event.preventDefault();
-        // We run the same logic as move to set the hoverTarget immediately on tap
-        handlePointerMove(event);
-    }
-
-    // --- Utility Functions ---
-    // drawButton and drawText are unchanged
-    
     function drawButton(text, x, y, w, h, isHovered, isDone, id = null) {
         ctx.strokeStyle = '#fff';
         if(isDone) ctx.fillStyle = '#00ff00';
         else ctx.fillStyle = isHovered ? '#00ff00' : '#555'; /* Neon Green for hover */
-        
-        // Add subtle shadow for depth
-        ctx.shadowColor = isHovered ? '#00ff00' : '#000';
-        ctx.shadowBlur = isHovered ? 15 : 0;
-        
         ctx.fillRect(x,y,w,h);
         ctx.strokeRect(x,y,w,h);
         
-        ctx.shadowBlur = 0; // Reset shadow
-
-        let fontSize = 16;
-        if (w < 200) fontSize = 12;
-        if (w > 400) fontSize = 24;
+        let fontSize = 24; // Larger base font for mobile buttons
+        if(text.length > 10) fontSize = 20; // Adjusted font size
+        if(text.length > 20) fontSize = 12;
 
         drawText(text, x + w/2, y + h/2 + 4, fontSize, isHovered || isDone ? '#000' : '#fff');
     }
@@ -604,39 +601,58 @@
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             
-            // Add a slight text shadow for readability
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-            ctx.shadowOffsetX = 2;
-            ctx.shadowOffsetY = 2;
-            ctx.shadowBlur = 2;
-            
-            ctx.fillText(text, x, y);
-            
-            // Reset shadows
-            ctx.shadowColor = 'transparent';
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 0;
-            ctx.shadowBlur = 0;
+            // Basic text wrapping for long titles
+            const maxWidth = baseWidth - 100; // 50px padding
+            if(ctx.measureText(text).width > maxWidth) {
+                const words = text.split(' ');
+                let line = '';
+                let testLine = '';
+                let yOffset = 0;
+                for(let n = 0; n < words.length; n++) {
+                    testLine = line + words[n] + ' ';
+                    if (ctx.measureText(testLine).width > maxWidth) {
+                        ctx.fillText(line, x, y + yOffset);
+                        line = words[n] + ' ';
+                        yOffset += size + 4; // Move to next line
+                    } else {
+                        line = testLine;
+                    }
+                }
+                ctx.fillText(line, x, y + yOffset);
+            } else {
+                ctx.fillText(text, x, y);
+            }
     }
     
-    // --- Start ---
-    
-    // Remove old mouse/click listeners
-    // canvas.addEventListener('click', handleClick);
-    // canvas.addEventListener('mousemove', handleMouseMove);
+    function handleMouseMove(event) {
+        if (!isGameActive) return;
+        
+        const { mouseX, mouseY } = getTransformedCoords(event);
 
-    // Add new "pointer" listeners that work for BOTH mouse and touch
-    canvas.addEventListener('pointerdown', handlePointerDown);
-    canvas.addEventListener('pointermove', handlePointerMove);
-    canvas.addEventListener('pointerup', handlePointerUp);
-    
-    // Handle case where pointer leaves the canvas (e.g., mouse-out)
-    canvas.addEventListener('pointerleave', () => {
+        const regions = clickRegions[gameState] || [];
         hoverTarget = null;
         canvas.style.cursor = 'default';
-    });
+        for (const region of regions) {
+             if (mouseX >= region.x && mouseX <= region.x + region.w &&
+                 mouseY >= region.y && mouseY <= region.y + region.h) {
+                 hoverTarget = region.id;
+                 canvas.style.cursor = 'pointer';
+                 break;
+             }
+        }
+    }
 
+    // --- Initial Setup ---
+    canvas.addEventListener('click', handleClick);
+    canvas.addEventListener('touchstart', handleClick, { passive: false }); // Use passive: false to allow preventDefault
 
+    // Mobile doesn't really have "hover", but we'll leave mousemove for desktop/debug
+    canvas.addEventListener('mousemove', handleMouseMove);
+    // canvas.addEventListener('touchmove', handleMouseMove, { passive: false }); // Can be noisy, enable if hover-like behavior is needed
+
+    window.addEventListener('resize', setupCanvas);
+
+    setupCanvas(); // Initial setup
     initializeGame();
     gameLoop();
 
@@ -644,3 +660,4 @@
 
 </body>
 </html>
+
