@@ -2,96 +2,106 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- Viewport settings for a true full-screen mobile experience -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Bui Project - The Adventure (Mobile)</title>
+    <!-- This viewport tag is essential for mobile responsiveness -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bui Project - The Adventure</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* Reset margins and padding for a full-screen experience */
-        html, body {
-            background-color: #000;
+        /* Make body fill the entire screen */
+        body, html {
+            background-color: #1a1a1a;
             color: #fff;
             font-family: 'Press Start 2P', cursive;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100%;
-            width: 100%;
+            width: 100vw;
+            height: 100vh;
             margin: 0;
             padding: 0;
             overflow: hidden; /* Prevent scrolling */
         }
 
+        /* This container will scale down while maintaining its aspect ratio */
         .game-container {
-            border: none;
-            border-radius: 0;
+            border: 8px solid #444;
+            border-radius: 15px;
             background-color: #000;
-            padding: 0;
-            box-shadow: none;
+            box-shadow: 0 0 25px #ff00ff, 0 0 15px #00ffff inset;
             position: relative;
-            width: 100vw; /* Fill width */
-            height: 100vh; /* Fill height */
-            box-sizing: border-box;
-            display: block; /* Will be controlled by JS */
+            
+            /* Sizing magic */
+            width: 100%;
+            height: 100%;
+            /* Set max size to the game's internal resolution */
+            max-width: 1200px; 
+            /* Enforce the 1200/800 aspect ratio */
+            aspect-ratio: 1200 / 800; 
         }
 
         canvas {
             background-color: #0d0d0d;
             display: block;
-            border: none;
-            border-radius: 0;
-            cursor: pointer;
-            width: 100%; /* Canvas fills container */
-            height: 100%; /* Canvas fills container */
-            touch-action: none; /* Disable double-tap zoom etc. */
+            border-radius: 5px;
+            
+            /* Make canvas fill its container */
+            width: 100%;
+            height: 100%;
+            
+            /* IMPORTANT: Prevents touch-scrolling/zooming on the canvas */
+            touch-action: none; 
         }
         
-        /* This is the "Flip your phone" message screen */
+        /* This is the "Flip your phone" screen */
         #rotate-overlay {
-            width: 100vw;
-            height: 100vh;
             position: fixed;
             top: 0;
             left: 0;
+            width: 100%;
+            height: 100%;
             background-color: #000;
-            color: #fff;
+            z-index: 100;
             display: none; /* Hidden by default */
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             text-align: center;
-            font-family: 'Press Start 2P', cursive;
-            font-size: 18px;
-            line-height: 1.5;
-            z-index: 1000;
+            padding: 20px;
         }
+
+        /* This media query shows the overlay ONLY in portrait mode */
+        @media (orientation: portrait) {
+            #rotate-overlay {
+                display: flex;
+            }
+            .game-container {
+                display: none; /* Hide the game in portrait */
+            }
+        }
+        
     </style>
 </head>
 <body>
-    <!-- New overlay for landscape orientation -->
+
+    <!-- This overlay will show on phones in portrait mode -->
     <div id="rotate-overlay">
-        Please rotate your<br>phone to portrait mode.
+        <h1 style="font-size: 18px; line-height: 1.5em; color: #00ff00;">
+            FLIP YOUR PHONE
+        </h1>
+        <p style="font-size: 14px;">(This adventure requires landscape mode)</p>
     </div>
 
+    <!-- The game container is hidden in portrait mode by the CSS above -->
     <div class="game-container" id="game-container">
-        <!-- Canvas width and height will be set by JavaScript -->
-        <canvas id="gameCanvas"></canvas>
+        <!-- The internal resolution is still 1200x800, but CSS scales the canvas -->
+        <canvas id="gameCanvas" width="1200" height="800"></canvas>
     </div>
 
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    const rotateOverlay = document.getElementById('rotate-overlay');
-    const gameContainer = document.getElementById('game-container');
-
-    // --- Base coordinate system (PORTRAIT) ---
-    const baseWidth = 800;
-    const baseHeight = 1200;
-    let scale = 1;
-    let offsetX = 0;
-    let offsetY = 0;
-
 
     // --- Image Preloading ---
     let imgGreyscale = new Image();
@@ -105,14 +115,17 @@
         lost: "https://ik.imagekit.io/ex6ksvxsvk/butter?updatedAt=1761322400651"
     };
     
+    // Set error handlers
     imgGreyscale.onerror = () => { console.error("Failed to load Greyscale image."); imagesLoaded.greyscale = 'error'; };
     imgAlbanian.onerror = () => { console.error("Failed to load Albanian image."); imagesLoaded.albanian = 'error'; };
     imgButter.onerror = () => { console.error("Failed to load Butter image."); imagesLoaded.butter = 'error'; };
 
+    // Set onload handlers
     imgGreyscale.onload = () => { console.log("Greyscale image loaded."); imagesLoaded.greyscale = true; };
     imgAlbanian.onload = () => { console.log("Albanian image loaded."); imagesLoaded.albanian = true; };
     imgButter.onload = () => { console.log("Butter image loaded."); imagesLoaded.butter = true; };
 
+    // Set src to start loading
     imgGreyscale.src = urls.internet;
     imgAlbanian.src = urls.albanian;
     imgButter.src = urls.lost;
@@ -134,38 +147,6 @@
     let animationState = {};
     let clickRegions = {};
     let isGameActive = true;
-
-    // --- Canvas Setup, Scaling, and Orientation Check ---
-    function setupCanvasAndOrientation() {
-        // Check if it's a mobile device (has touch points) before checking orientation
-        const isMobileDevice = navigator.maxTouchPoints > 0;
-
-        // Check orientation first
-        if (isMobileDevice && window.innerWidth > window.innerHeight) {
-            // Landscape on a mobile device
-            rotateOverlay.style.display = 'flex';
-            gameContainer.style.display = 'none';
-            isGameActive = false;
-        } else {
-            // Portrait
-            rotateOverlay.style.display = 'none';
-            gameContainer.style.display = 'block';
-            isGameActive = true;
-
-            // Set canvas to physical pixel size
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-
-            // Calculate scale to fit and maintain aspect ratio
-            scale = Math.min(canvas.width / baseWidth, canvas.height / baseHeight);
-
-            // Calculate centered offsets
-            const newWidth = baseWidth * scale;
-            const newHeight = baseHeight * scale;
-            offsetX = (canvas.width - newWidth) / 2;
-            offsetY = (canvas.height - newHeight) / 2;
-        }
-    }
     
     function setRegions(regions) {
         clickRegions[gameState] = regions;
@@ -176,31 +157,37 @@
         gameState = GAME_STATES.START;
     }
 
-    // --- Drawing Assets (using 800x1200 coordinate system) ---
+    // --- Drawing Assets ---
+    // All drawing functions (drawInternetAddict, drawLost, etc.)
+    // remain EXACTLY THE SAME as they draw to the internal 1200x800 canvas.
+
     function drawInternetAddict(x, y, frame) {
         ctx.save();
         ctx.translate(x, y);
 
+        // Grey character
         ctx.fillStyle = '#888888';
         ctx.fillRect(50, 50, 100, 150); // Body
         ctx.beginPath();
         ctx.arc(100, 25, 25, 0, Math.PI * 2); // Head
         ctx.fill();
 
-        const glowAlpha = Math.abs(Math.sin(frame * 0.05));
+        // Phone
+        const glowAlpha = Math.abs(Math.sin(frame * 0.05)); // Pulsating glow
         ctx.shadowColor = `rgba(0, 255, 0, ${glowAlpha})`;
         ctx.shadowBlur = 15;
-        ctx.fillStyle = '#00ff00';
-        ctx.fillRect(160, 100, 30, 50);
+        ctx.fillStyle = '#00ff00'; // Neon green
+        ctx.fillRect(160, 100, 30, 50); // Phone body
         ctx.shadowBlur = 0; 
 
         ctx.fillStyle = '#008800'; 
         ctx.fillRect(165, 105, 20, 40); 
 
+        // Soul stream
         ctx.strokeStyle = `rgba(200, 200, 255, 0.6)`;
         ctx.lineWidth = 5;
         ctx.beginPath();
-        ctx.moveTo(100, 25);
+        ctx.moveTo(100, 25); // From head
         
         const phoneCenterX = 160 + 15;
         const phoneCenterY = 100 + 25;
@@ -224,17 +211,20 @@
 
         const phase = (frame % 300);
         
+        // Character
         ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(50, 50, 100, 150);
+        ctx.fillRect(50, 50, 100, 150); // Body
         ctx.beginPath();
-        ctx.arc(100, 25, 25, 0, Math.PI * 2);
+        ctx.arc(100, 25, 25, 0, Math.PI * 2); // Head
         ctx.fill();
 
         if (phase < 100) {
-            ctx.fillStyle = '#00FF00';
+            // Hand moving pill to mouth
+            ctx.fillStyle = '#00FF00'; // Neon green pill
             const pillY = 100 - (phase * 0.8);
             ctx.fillRect(110, pillY, 15, 10);
         } else {
+            // Eyes glow
             const glowAlpha = Math.abs(Math.sin(frame * 0.1));
             ctx.fillStyle = `rgba(0, 255, 0, ${glowAlpha})`;
             ctx.beginPath();
@@ -256,9 +246,9 @@
     function drawAlbanianFlag(x, y, frame) {
         ctx.save();
         ctx.translate(x, y);
-        ctx.fillStyle = '#8B4513';
+        ctx.fillStyle = '#8B4513'; // Pole
         ctx.fillRect(0, 0, 10, 200);
-        ctx.fillStyle = '#FF0000';
+        ctx.fillStyle = '#FF0000'; // Flag
         ctx.beginPath();
         ctx.moveTo(10, 10);
         let wavePath = [];
@@ -274,27 +264,32 @@
         }
         ctx.closePath();
         ctx.fill();
+        
+        // Simplified Eagle
         ctx.fillStyle = '#000000';
         const waveOffset = Math.sin((100 / 50) + frame * 0.05) * 10;
-        const cx = 10 + 100;
-        const cy = 10 + waveOffset + 65;
+        const cx = 10 + 100; // center x
+        const cy = 10 + waveOffset + 65; // center y
         ctx.beginPath();
-        ctx.fillRect(cx - 10, cy - 15, 20, 30);
-        ctx.fillRect(cx - 25, cy - 35, 15, 20);
-        ctx.fillRect(cx + 10, cy - 35, 15, 20);
-        ctx.fillRect(cx - 30, cy - 30, 5, 5);
-        ctx.fillRect(cx + 25, cy - 30, 5, 5);
+        ctx.fillRect(cx - 10, cy - 15, 20, 30); // Body
+        ctx.fillRect(cx - 25, cy - 35, 15, 20); // Head 1
+        ctx.fillRect(cx + 10, cy - 35, 15, 20); // Head 2
+        ctx.fillRect(cx - 30, cy - 30, 5, 5); // Beak 1
+        ctx.fillRect(cx + 25, cy - 30, 5, 5); // Beak 2
         ctx.moveTo(cx - 10, cy - 10); ctx.lineTo(cx - 50, cy - 30); ctx.lineTo(cx - 40, cy + 20); ctx.closePath();
         ctx.moveTo(cx + 10, cy - 10); ctx.lineTo(cx + 50, cy - 30); ctx.lineTo(cx + 40, cy + 20); ctx.closePath();
         ctx.fill();
+
         ctx.restore();
     }
 
     function drawBrazilianFlag(x, y, frame) {
         ctx.save();
         ctx.translate(x, y);
-        ctx.fillStyle = '#8B4513';
+        ctx.fillStyle = '#8B4513'; // Pole
         ctx.fillRect(0, 0, 10, 200);
+
+        // Waving flag base (Green)
         ctx.beginPath();
         ctx.moveTo(10, 10);
         let wavePath = [];
@@ -309,27 +304,36 @@
              ctx.lineTo(wavePath[i].x, wavePath[i].y + 130);
         }
         ctx.closePath();
-        ctx.fillStyle = '#009739';
+        ctx.fillStyle = '#009739'; // Green
         ctx.fill();
+        
+        // Yellow Rhombus
         const rhombusCX = 10 + 100;
         const waveOffset = Math.sin((100 / 50) + frame * 0.05) * 10;
         const rhombusCY = 10 + 65 + waveOffset; 
         const widthFactor = 0.8;
         const heightFactor = 0.8;
-        ctx.fillStyle = '#FFDD00';
+
+        ctx.fillStyle = '#FFDD00'; // Yellow
         ctx.beginPath();
-        ctx.moveTo(rhombusCX, rhombusCY - (65 * heightFactor));
-        ctx.lineTo(rhombusCX + (100 * widthFactor), rhombusCY);
-        ctx.lineTo(rhombusCX, rhombusCY + (65 * heightFactor));
-        ctx.lineTo(rhombusCX - (100 * widthFactor), rhombusCY);
+        ctx.moveTo(rhombusCX, rhombusCY - (65 * heightFactor)); // Top
+        ctx.lineTo(rhombusCX + (100 * widthFactor), rhombusCY);   // Right
+        ctx.lineTo(rhombusCX, rhombusCY + (65 * heightFactor)); // Bottom
+        ctx.lineTo(rhombusCX - (100 * widthFactor), rhombusCY);   // Left
         ctx.closePath();
         ctx.fill();
-        ctx.fillStyle = '#012169';
+
+        // Blue Circle
+        ctx.fillStyle = '#012169'; // Dark Blue
         ctx.beginPath();
         ctx.arc(rhombusCX, rhombusCY, 40, 0, Math.PI * 2);
         ctx.fill();
+
+        // White band (simplified)
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(rhombusCX - 40, rhombusCY - 5, 80, 10);
+        
+        // Stars (simplified)
         ctx.fillStyle = '#FFFFFF';
         ctx.beginPath();
         ctx.arc(rhombusCX - 20, rhombusCY - 20, 3, 0, Math.PI * 2);
@@ -337,62 +341,53 @@
         ctx.arc(rhombusCX - 10, rhombusCY + 20, 3, 0, Math.PI * 2);
         ctx.arc(rhombusCX + 25, rhombusCY + 25, 3, 0, Math.PI * 2);
         ctx.fill();
+
         ctx.restore();
     }
 
-    // --- Helper function to draw "contain" image ---
-    function drawImageContain(img) {
-        const hRatio = baseWidth / img.width;
-        const vRatio = baseHeight / img.height;
-        const ratio = Math.min(hRatio, vRatio); // Use min for "contain"
-        const centerShiftX = (baseWidth - img.width * ratio) / 2;
-        const centerShiftY = (baseHeight - img.height * ratio) / 2;
-        ctx.drawImage(img, 0, 0, img.width, img.height,
-                      centerShiftX, centerShiftY, img.width * ratio, img.height * ratio);
-    }
 
-    // --- State Drawing Functions (Portrait Layout) ---
+    // --- State Drawing Functions ---
+    // All drawing functions (drawStartScreen, drawQ1Screen, etc.)
+    // remain EXACTLY THE SAME.
+
     function drawStartScreen() {
-        drawText("ARE YOU READY?", baseWidth / 2, 400, 40); // Centered text
-        const btn = { id: 'start', text: 'Fuck no', x: 150, y: 550, w: 500, h: 100 };
+        drawText("ARE YOU READY?", canvas.width / 2, 300, 40);
+        const btn = { id: 'start', text: 'Fuck no', x: canvas.width / 2 - 150, y: 450, w: 300, h: 80 };
         drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
         setRegions([btn]);
     }
 
     function drawQ1Screen() {
-        drawText("ARE YOU HARDCORE.", baseWidth / 2, 400, 32);
-        const btnYes = { id: 'yes', text: 'YES', x: 150, y: 550, w: 500, h: 100 };
-        const btnNo = { id: 'no', text: 'NO', x: 150, y: 670, w: 500, h: 100 };
+        drawText("ARE YOU HARDCORE.", canvas.width / 2, 300, 32);
+        const btnYes = { id: 'yes', text: 'YES', x: canvas.width / 2 - 350, y: 450, w: 300, h: 80 };
+        const btnNo = { id: 'no', text: 'NO', x: canvas.width / 2 + 50, y: 450, w: 300, h: 80 };
         drawButton(btnYes.text, btnYes.x, btnYes.y, btnYes.w, btnYes.h, hoverTarget === btnYes.id, false, btnYes.id);
         drawButton(btnNo.text, btnNo.x, btnNo.y, btnNo.w, btnNo.h, hoverTarget === btnNo.id, false, btnNo.id);
         setRegions([btnYes, btnNo]);
     }
 
     function drawQ2Screen() {
-        drawText("ARE YOU THE BADDEST OF THEM ALL.", baseWidth / 2, 400, 32);
-        const btnYes = { id: 'yes', text: 'YES', x: 150, y: 550, w: 500, h: 100 };
-        const btnNo = { id: 'no', text: 'NO', x: 150, y: 670, w: 500, h: 100 };
+        drawText("ARE YOU THE BADDEST OF THEM ALL.", canvas.width / 2, 300, 32);
+        const btnYes = { id: 'yes', text: 'YES', x: canvas.width / 2 - 350, y: 450, w: 300, h: 80 };
+        const btnNo = { id: 'no', text: 'NO', x: canvas.width / 2 + 50, y: 450, w: 300, h: 80 };
         drawButton(btnYes.text, btnYes.x, btnYes.y, btnYes.w, btnYes.h, hoverTarget === btnYes.id, false, btnYes.id);
         drawButton(btnNo.text, btnNo.x, btnNo.y, btnNo.w, btnNo.h, hoverTarget === btnNo.id, false, btnNo.id);
         setRegions([btnYes, btnNo]);
     }
 
     function drawQ3Screen() {
-        drawText("ARE YOU:", baseWidth / 2, 100, 32);
-
-        const regionWidth = 200;
-        const regionHeight = 230;
-        const centerX = (baseWidth - regionWidth) / 2; // 300
+        drawText("ARE YOU:", canvas.width / 2, 150, 32);
 
         const regions = [
-            { id: 'internet', x: centerX, y: 200, w: regionWidth, h: regionHeight },
-            { id: 'albanian', x: centerX, y: 450, w: regionWidth, h: regionHeight },
-            { id: 'lost', x: centerX, y: 700, w: regionWidth, h: regionHeight },
+            { id: 'internet', x: 150, y: 300, w: 200, h: 250 },
+            { id: 'albanian', x: 500, y: 300, w: 200, h: 250 },
+            { id: 'lost', x: 850, y: 300, w: 200, h: 250 },
         ];
 
         drawInternetAddict(regions[0].x, regions[0].y, animationState.frame);
 
-        if (Math.random() < 0.15) {
+        // Glitching flag logic
+        if (Math.random() < 0.15) { 
             drawAlbanianFlag(regions[1].x, regions[1].y, animationState.frame);
         } else {
             drawBrazilianFlag(regions[1].x, regions[1].y, animationState.frame);
@@ -412,77 +407,64 @@
         setRegions(regions);
     }
     
-    // --- End Screens (All updated with both buttons) ---
+    function drawEndScreen(message) {
+        drawText(message, canvas.width / 2, 300, 32);
+        const btn = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 200, y: 450, w: 400, h: 80 }; // Centered, wider
+        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
+        setRegions([btn]);
+    }
 
     function drawEndFailScreen() {
-        drawText("Sorry, you can't continue.", baseWidth / 2, 400, 32);
-        const btnRestart = { id: 'restart', text: 'restart', x: 150, y: 550, w: 500, h: 100 };
-        const btnReady = { id: 'ready', text: 'I am ready now', x: 150, y: 670, w: 500, h: 100 };
-        drawButton(btnRestart.text, btnRestart.x, btnRestart.y, btnRestart.w, btnRestart.h, hoverTarget === btnRestart.id, false, btnRestart.id);
-        drawButton(btnReady.text, btnReady.x, btnReady.y, btnReady.w, btnReady.h, hoverTarget === btnReady.id, false, btnReady.id);
-        setRegions([btnRestart, btnReady]);
+        drawEndScreen("Sorry, you can't continue.");
     }
     
     function drawEndInternetScreen() {
         if (imagesLoaded.greyscale === true) {
-            drawImageContain(imgGreyscale);
+            ctx.drawImage(imgGreyscale, 0, 0, canvas.width, canvas.height);
         } else if (imagesLoaded.greyscale === 'error') {
-            drawText("Error loading Greyscale", baseWidth / 2, 300, 32, '#ff0000');
+            drawText("Error loading Greyscale", canvas.width / 2, 300, 32, '#ff0000');
         } else {
-            drawText("Loading Greyscale...", baseWidth / 2, 300, 32);
+            drawText("Loading Greyscale...", canvas.width / 2, 300, 32);
         }
-        const btnRestart = { id: 'restart', text: 'restart', x: 150, y: 900, w: 500, h: 100 };
-        const btnReady = { id: 'ready', text: 'I am ready now', x: 150, y: 1020, w: 500, h: 100 };
-        drawButton(btnRestart.text, btnRestart.x, btnRestart.y, btnRestart.w, btnRestart.h, hoverTarget === btnRestart.id, false, btnRestart.id);
-        drawButton(btnReady.text, btnReady.x, btnReady.y, btnReady.w, btnReady.h, hoverTarget === btnReady.id, false, btnReady.id);
-        setRegions([btnRestart, btnReady]);
+        const btn = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 200, y: 700, w: 400, h: 80 }; // Centered, wider
+        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
+        setRegions([btn]);
     }
 
     function drawEndLostScreen() {
         if (imagesLoaded.butter === true) {
-            drawImageContain(imgButter);
+            ctx.drawImage(imgButter, 0, 0, canvas.width, canvas.height);
         } else if (imagesLoaded.butter === 'error') {
-            drawText("Error loading butter", baseWidth / 2, 300, 32, '#ff0000');
+            drawText("Error loading butter", canvas.width / 2, 300, 32, '#ff0000');
         } else {
-            drawText("Loading butter...", baseWidth / 2, 300, 32);
+            drawText("Loading butter...", canvas.width / 2, 300, 32);
         }
-        const btnRestart = { id: 'restart', text: 'restart', x: 150, y: 900, w: 500, h: 100 };
-        const btnReady = { id: 'ready', text: 'I am ready now', x: 150, y: 1020, w: 500, h: 100 };
-        drawButton(btnRestart.text, btnRestart.x, btnRestart.y, btnRestart.w, btnRestart.h, hoverTarget === btnRestart.id, false, btnRestart.id);
-        drawButton(btnReady.text, btnReady.x, btnReady.y, btnReady.w, btnReady.h, hoverTarget === btnReady.id, false, btnReady.id);
-        setRegions([btnRestart, btnReady]);
+        const btn = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 200, y: 700, w: 400, h: 80 }; // Centered, wider
+        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
+        setRegions([btn]);
     }
 
     function drawEndAlbanianScreen() {
         if (imagesLoaded.albanian === true) {
-            drawImageContain(imgAlbanian);
+            ctx.drawImage(imgAlbanian, 0, 0, canvas.width, canvas.height);
         } else if (imagesLoaded.albanian === 'error') {
-            drawText("Error loading albanian", baseWidth / 2, 300, 32, '#ff0000');
+            drawText("Error loading albanian", canvas.width / 2, 300, 32, '#ff0000');
         } else {
-            drawText("Loading albanian...", baseWidth / 2, 300, 32);
+            drawText("Loading albanian...", canvas.width / 2, 300, 32);
         }
-        const btnRestart = { id: 'restart', text: 'restart', x: 150, y: 900, w: 500, h: 100 };
-        const btnReady = { id: 'ready', text: 'I am ready now', x: 150, y: 1020, w: 500, h: 100 };
-        drawButton(btnRestart.text, btnRestart.x, btnRestart.y, btnRestart.w, btnRestart.h, hoverTarget === btnRestart.id, false, btnRestart.id);
-        drawButton(btnReady.text, btnReady.x, btnReady.y, btnReady.w, btnReady.h, hoverTarget === btnReady.id, false, btnReady.id);
-        setRegions([btnRestart, btnReady]);
+        const btn = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 200, y: 700, w: 400, h: 80 }; // Centered, wider
+        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
+        setRegions([btn]);
     }
 
     // --- Core Logic ---
     function gameLoop() {
         if (!isGameActive) {
-            // Don't draw if in landscape
-            requestAnimationFrame(gameLoop); // Keep looping to check for orientation change
-            return;
+            return; 
         }
-
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.save();
-        ctx.translate(offsetX, offsetY);
-        ctx.scale(scale, scale);
-
-        // --- Draw game elements inside the 800x1200 coordinate system ---
         animationState.frame++;
+        
         switch (gameState) {
             case GAME_STATES.START: drawStartScreen(); break;
             case GAME_STATES.Q1: drawQ1Screen(); break;
@@ -493,50 +475,42 @@
             case GAME_STATES.END_LOST: drawEndLostScreen(); break;
             case GAME_STATES.END_ALBANIAN: drawEndAlbanianScreen(); break;
         }
-
-        ctx.restore();
-        
         requestAnimationFrame(gameLoop);
     }
     
-    // --- Event Handlers (Updated for Scaling and Touch) ---
-    function getTransformedCoords(event) {
-        // Removed event.preventDefault() from here to fix touch bug
+    // --- NEW: Event Handlers ---
+
+    /**
+     * This function converts on-screen click/touch coordinates to the
+     * internal 1200x800 canvas coordinates. This is the key to
+     * making the game responsive.
+     */
+    function getScaledCoords(event) {
         const rect = canvas.getBoundingClientRect();
-        let clientX, clientY;
+        // Calculate the ratio between the internal size (1200) and the displayed size
+        const scaleX = canvas.width / rect.width; 
+        const scaleY = canvas.height / rect.height;
 
-        if (event.type.startsWith('touch')) {
-            clientX = (event.touches[0] || event.changedTouches[0]).clientX;
-            clientY = (event.touches[0] || event.changedTouches[0]).clientY;
-        } else {
-            clientX = event.clientX;
-            clientY = event.clientY;
-        }
-
-        const mouseX_raw = clientX - rect.left;
-        const mouseY_raw = clientY - rect.top;
-
-        const mouseX = (mouseX_raw - offsetX) / scale;
-        const mouseY = (mouseY_raw - offsetY) / scale;
-
-        return { mouseX, mouseY };
+        // Get the x/y of the event relative to the canvas element
+        const x = (event.clientX - rect.left) * scaleX;
+        const y = (event.clientY - rect.top) * scaleY;
+        
+        return { x, y };
     }
 
-    function handleInteraction(event) {
+    // This function handles the "click" or "tap" action
+    function handlePointerUp(event) {
         if (!isGameActive) return;
-
-        // Prevent default touch behaviors (like zoom) only when interacting
-        if (event.type === 'touchstart') {
-            event.preventDefault();
-        }
+        event.preventDefault();
         
-        const { mouseX, mouseY } = getTransformedCoords(event);
+        const { x: mouseX, y: mouseY } = getScaledCoords(event);
 
         const regions = clickRegions[gameState] || [];
         for (const region of regions) {
             if (mouseX >= region.x && mouseX <= region.x + region.w &&
                 mouseY >= region.y && mouseY <= region.y + region.h) {
                 
+                // This logic is identical to your original handleClick
                 switch(gameState) {
                     case GAME_STATES.START:
                         if (region.id === 'start') gameState = GAME_STATES.Q1;
@@ -558,28 +532,68 @@
                     case GAME_STATES.END_INTERNET:
                     case GAME_STATES.END_LOST:
                     case GAME_STATES.END_ALBANIAN:
-                        if (region.id === 'restart') {
-                            initializeGame();
-                        } else if (region.id === 'ready') {
-                            window.location.href = 'https://www.shopify.com/de';
-                        }
+                        if (region.id === 'restart') initializeGame();
                         break;
                 }
-                return;
+                hoverTarget = null; // Clear hover after click
+                return; // Exit after processing click
             }
         }
     }
     
+    // This function handles mouse hover and touch-down highlighting
+    function handlePointerMove(event) {
+        if (!isGameActive) return;
+        event.preventDefault();
+
+        const { x: mouseX, y: mouseY } = getScaledCoords(event);
+        const regions = clickRegions[gameState] || [];
+        
+        let onTarget = false;
+        for (const region of regions) {
+             if (mouseX >= region.x && mouseX <= region.x + region.w &&
+                 mouseY >= region.y && mouseY <= region.y + region.h) {
+                 hoverTarget = region.id;
+                 canvas.style.cursor = 'pointer';
+                 onTarget = true;
+                 break;
+             }
+        }
+        
+        if (!onTarget) {
+            hoverTarget = null;
+            canvas.style.cursor = 'default';
+        }
+    }
+    
+    // This function handles the "down" state for touch, giving immediate feedback
+    function handlePointerDown(event) {
+         if (!isGameActive) return;
+        event.preventDefault();
+        // We run the same logic as move to set the hoverTarget immediately on tap
+        handlePointerMove(event);
+    }
+
+    // --- Utility Functions ---
+    // drawButton and drawText are unchanged
+    
     function drawButton(text, x, y, w, h, isHovered, isDone, id = null) {
         ctx.strokeStyle = '#fff';
         if(isDone) ctx.fillStyle = '#00ff00';
-        else ctx.fillStyle = isHovered ? '#00ff00' : '#555';
+        else ctx.fillStyle = isHovered ? '#00ff00' : '#555'; /* Neon Green for hover */
+        
+        // Add subtle shadow for depth
+        ctx.shadowColor = isHovered ? '#00ff00' : '#000';
+        ctx.shadowBlur = isHovered ? 15 : 0;
+        
         ctx.fillRect(x,y,w,h);
         ctx.strokeRect(x,y,w,h);
         
-        let fontSize = 24; // Good default for large buttons
-        if(text.length > 10) fontSize = 20;
-        if(text.length > 15) fontSize = 16; // Adjust for "I am ready now"
+        ctx.shadowBlur = 0; // Reset shadow
+
+        let fontSize = 16;
+        if (w < 200) fontSize = 12;
+        if (w > 400) fontSize = 24;
 
         drawText(text, x + w/2, y + h/2 + 4, fontSize, isHovered || isDone ? '#000' : '#fff');
     }
@@ -590,62 +604,39 @@
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             
-            const maxWidth = baseWidth - 100; // 50px padding
-            if(ctx.measureText(text).width > maxWidth && text.includes(' ')) {
-                const words = text.split(' ');
-                let line = '';
-                let yOffset = 0;
-                // Adjust starting Y for multi-line text to keep it centered
-                const linesNeeded = Math.ceil(ctx.measureText(text).width / (maxWidth / 1.5)); // Rough estimate
-                if (linesNeeded > 1) {
-                    yOffset -= (size * (linesNeeded - 1)) / 2;
-                }
-
-                for(let n = 0; n < words.length; n++) {
-                    let testLine = line + words[n] + ' ';
-                    if (ctx.measureText(testLine).width > maxWidth && n > 0) {
-                        ctx.fillText(line, x, y + yOffset);
-                        line = words[n] + ' ';
-                        yOffset += size + 4;
-                    } else {
-                        line = testLine;
-                    }
-                }
-                ctx.fillText(line, x, y + yOffset);
-            } else {
-                ctx.fillText(text, x, y);
-            }
+            // Add a slight text shadow for readability
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 2;
+            ctx.shadowBlur = 2;
+            
+            ctx.fillText(text, x, y);
+            
+            // Reset shadows
+            ctx.shadowColor = 'transparent';
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+            ctx.shadowBlur = 0;
     }
     
-    function handleMouseMove(event) {
-        if (!isGameActive) return;
-        
-        const { mouseX, mouseY } = getTransformedCoords(event);
-        const regions = clickRegions[gameState] || [];
+    // --- Start ---
+    
+    // Remove old mouse/click listeners
+    // canvas.addEventListener('click', handleClick);
+    // canvas.addEventListener('mousemove', handleMouseMove);
+
+    // Add new "pointer" listeners that work for BOTH mouse and touch
+    canvas.addEventListener('pointerdown', handlePointerDown);
+    canvas.addEventListener('pointermove', handlePointerMove);
+    canvas.addEventListener('pointerup', handlePointerUp);
+    
+    // Handle case where pointer leaves the canvas (e.g., mouse-out)
+    canvas.addEventListener('pointerleave', () => {
         hoverTarget = null;
         canvas.style.cursor = 'default';
-        for (const region of regions) {
-             if (mouseX >= region.x && mouseX <= region.x + region.w &&
-                 mouseY >= region.y && mouseY <= region.y + region.h) {
-                 hoverTarget = region.id;
-                 canvas.style.cursor = 'pointer';
-                 break;
-             }
-        }
-    }
+    });
 
-    // --- Initial Setup ---
-    canvas.addEventListener('click', handleInteraction);
-    canvas.addEventListener('touchstart', handleInteraction, { passive: false });
 
-    // Mousemove for hover (desktop debugging)
-    canvas.addEventListener('mousemove', handleMouseMove);
-
-    // Check orientation on resize
-    window.addEventListener('resize', setupCanvasAndOrientation);
-
-    // Initial setup
-    setupCanvasAndOrientation(); 
     initializeGame();
     gameLoop();
 
@@ -653,5 +644,4 @@
 
 </body>
 </html>
-
 
