@@ -452,8 +452,13 @@
         const btnHeight = 80;
         const btnSpacing = 20;
         const btnX = canvas.width / 2 - btnWidth / 2; // Centered X
-        const btnRestartY = 650; // Top button Y (lower on screen for images)
-        const btnReadyY = btnRestartY + btnHeight + btnSpacing; // Bottom button Y
+        
+        // --- UPDATED Y POSITIONS ---
+        // Create 20% (160px) of space below the last button (800 * 0.2 = 160)
+        // Last button (Ready) should end at y = 800 - 160 = 640.
+        // Last button (Ready) starts at y = 640 - btnHeight = 560.
+        const btnReadyY = 560;
+        const btnRestartY = btnReadyY - btnSpacing - btnHeight; // 560 - 20 - 80 = 460
 
         const btnRestart = { id: 'restart', text: 'RESTART', x: btnX, y: btnRestartY, w: btnWidth, h: btnHeight };
         const btnReady = { id: 'ready', text: 'I am ready now', x: btnX, y: btnReadyY, w: btnWidth, h: btnHeight };
@@ -480,8 +485,13 @@
         const btnHeight = 80;
         const btnSpacing = 20;
         const btnX = canvas.width / 2 - btnWidth / 2; // Centered X
-        const btnRestartY = 650; // Top button Y
-        const btnReadyY = btnRestartY + btnHeight + btnSpacing; // Bottom button Y
+
+        // --- UPDATED Y POSITIONS ---
+        // Create 20% (160px) of space below the last button (800 * 0.2 = 160)
+        // Last button (Ready) should end at y = 800 - 160 = 640.
+        // Last button (Ready) starts at y = 640 - btnHeight = 560.
+        const btnReadyY = 560;
+        const btnRestartY = btnReadyY - btnSpacing - btnHeight; // 560 - 20 - 80 = 460
 
         const btnRestart = { id: 'restart', text: 'RESTART', x: btnX, y: btnRestartY, w: btnWidth, h: btnHeight };
         const btnReady = { id: 'ready', text: 'I am ready now', x: btnX, y: btnReadyY, w: btnWidth, h: btnHeight };
@@ -508,8 +518,13 @@
         const btnHeight = 80;
         const btnSpacing = 20;
         const btnX = canvas.width / 2 - btnWidth / 2; // Centered X
-        const btnRestartY = 650; // Top button Y
-        const btnReadyY = btnRestartY + btnHeight + btnSpacing; // Bottom button Y
+
+        // --- UPDATED Y POSITIONS ---
+        // Create 20% (160px) of space below the last button (800 * 0.2 = 160)
+        // Last button (Ready) should end at y = 800 - 160 = 640.
+        // Last button (Ready) starts at y = 640 - btnHeight = 560.
+        const btnReadyY = 560;
+        const btnRestartY = btnReadyY - btnSpacing - btnHeight; // 560 - 20 - 80 = 460
 
         const btnRestart = { id: 'restart', text: 'RESTART', x: btnX, y: btnRestartY, w: btnWidth, h: btnHeight };
         const btnReady = { id: 'ready', text: 'I am ready now', x: btnX, y: btnReadyY, w: btnWidth, h: btnHeight };
@@ -729,6 +744,7 @@
 
 </body>
 </html>
+
 
 
 
