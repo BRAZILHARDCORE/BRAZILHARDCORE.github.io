@@ -137,9 +137,12 @@
 
     // --- Canvas Setup, Scaling, and Orientation Check ---
     function setupCanvasAndOrientation() {
+        // Check if it's a mobile device (has touch points) before checking orientation
+        const isMobileDevice = navigator.maxTouchPoints > 0;
+
         // Check orientation first
-        if (window.innerWidth > window.innerHeight) {
-            // Landscape
+        if (isMobileDevice && window.innerWidth > window.innerHeight) {
+            // Landscape on a mobile device
             rotateOverlay.style.display = 'flex';
             gameContainer.style.display = 'none';
             isGameActive = false;
@@ -650,4 +653,5 @@
 
 </body>
 </html>
+
 
