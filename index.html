@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bui Project - The Adventure</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #fff;
+            font-family: 'Press Start 2P', cursive;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            flex-direction: column;
+        }
+
+        .game-container {
+            border: 8px solid #444;
+            border-radius: 15px;
+            background-color: #000;
+            padding: 20px;
+            box-shadow: 0 0 25px #ff00ff, 0 0 15px #00ffff inset;
+            position: relative;
+        }
+
+        canvas {
+            background-color: #0d0d0d;
+            display: block;
+            border-radius: 5px;
+            border: 2px solid #333;
+            cursor: pointer;
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="game-container" id="game-container">
+        <canvas id="gameCanvas" width="1200" height="800"></canvas>
+    </div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Image Preloading ---
+    let imgGreyscale = new Image();
+    let imgAlbanian = new Image();
+    let imgButter = new Image();
+    let imagesLoaded = { greyscale: false, albanian: false, butter: false };
+
+    const urls = {
+        internet: "https://ik.imagekit.io/ex6ksvxsvk/greyscale?updatedAt=1761322387216",
+        albanian: "https://ik.imagekit.io/ex6ksvxsvk/secretly%20albanian?updatedAt=17613223716226",
+        lost: "https://ik.imagekit.io/ex6ksvxsvk/butter?updatedAt=1761322400651"
+    };
+    
+    // Set error handlers
+    imgGreyscale.onerror = () => { console.error("Failed to load Greyscale image."); imagesLoaded.greyscale = 'error'; };
+    imgAlbanian.onerror = () => { console.error("Failed to load Albanian image."); imagesLoaded.albanian = 'error'; };
+    imgButter.onerror = () => { console.error("Failed to load Butter image."); imagesLoaded.butter = 'error'; };
+
+    // Set onload handlers
+    imgGreyscale.onload = () => { console.log("Greyscale image loaded."); imagesLoaded.greyscale = true; };
+    imgAlbanian.onload = () => { console.log("Albanian image loaded."); imagesLoaded.albanian = true; };
+    imgButter.onload = () => { console.log("Butter image loaded."); imagesLoaded.butter = true; };
+
+    // Set src to start loading
+    imgGreyscale.src = urls.internet;
+    imgAlbanian.src = urls.albanian;
+    imgButter.src = urls.lost;
+
+
+    // --- Game States & Data ---
+    const GAME_STATES = {
+        START: 'START',
+        Q1: 'Q1',
+        Q2: 'Q2',
+        Q3: 'Q3',
+        END_FAIL: 'END_FAIL',
+        END_INTERNET: 'END_INTERNET',
+        END_LOST: 'END_LOST',
+        END_ALBANIAN: 'END_ALBANIAN'
+    };
+    let gameState = GAME_STATES.START;
+    let hoverTarget = null;
+    let animationState = {};
+    let clickRegions = {};
+    let isGameActive = true;
+    
+    function setRegions(regions) {
+        clickRegions[gameState] = regions;
+    }
+
+    function initializeGame() {
+        animationState = { frame: 0 };
+        gameState = GAME_STATES.START;
+    }
+
+    // --- Drawing Assets ---
+
+    function drawInternetAddict(x, y, frame) {
+        ctx.save();
+        ctx.translate(x, y);
+
+        // Grey character
+        ctx.fillStyle = '#888888';
+        ctx.fillRect(50, 50, 100, 150); // Body
+        ctx.beginPath();
+        ctx.arc(100, 25, 25, 0, Math.PI * 2); // Head
+        ctx.fill();
+
+        // Phone
+        // Apply glowing effect to phone
+        const glowAlpha = Math.abs(Math.sin(frame * 0.05)); // Pulsating glow
+        ctx.shadowColor = `rgba(0, 255, 0, ${glowAlpha})`;
+        ctx.shadowBlur = 15;
+        ctx.fillStyle = '#00ff00'; // Neon green for the glowing phone
+        ctx.fillRect(160, 100, 30, 50); // Phone body
+        ctx.shadowBlur = 0; // Reset shadow for other drawings
+
+        // Phone screen (darker green inside the glowing phone)
+        ctx.fillStyle = '#008800'; 
+        ctx.fillRect(165, 105, 20, 40); 
+
+        // Soul stream
+        ctx.strokeStyle = `rgba(200, 200, 255, 0.6)`;
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(100, 25); // From character's head
+        
+        // Connect to the phone
+        const phoneCenterX = 160 + 15;
+        const phoneCenterY = 100 + 25;
+        const numSegments = 30;
+        for (let i = 0; i <= numSegments; i++) {
+            const t = i / numSegments;
+            const currentX = 100 + (phoneCenterX - 100) * t;
+            const currentY = 25 + (phoneCenterY - 25) * t;
+            const wave = Math.sin((i * 0.5) + frame * 0.1) * (1 - t) * 10; // Wave decreases as it reaches the phone
+            ctx.lineTo(currentX + wave, currentY);
+        }
+        ctx.stroke();
+        
+        ctx.restore();
+        drawText("Addicted to the internet", x + 100, y + 230, 14);
+    }
+
+    function drawLost(x, y, frame) {
+        ctx.save();
+        ctx.translate(x, y);
+
+        const phase = (frame % 300);
+        
+        // Character
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(50, 50, 100, 150); // Body
+        ctx.beginPath();
+        ctx.arc(100, 25, 25, 0, Math.PI * 2); // Head
+        ctx.fill();
+
+        if (phase < 100) {
+            // Hand moving pill to mouth
+            ctx.fillStyle = '#00FF00'; // Neon green pill
+            const pillY = 100 - (phase * 0.8);
+            ctx.fillRect(110, pillY, 15, 10);
+        } else {
+            // Eyes glow
+            const glowAlpha = Math.abs(Math.sin(frame * 0.1));
+            ctx.fillStyle = `rgba(0, 255, 0, ${glowAlpha})`;
+            ctx.beginPath();
+            ctx.arc(90, 20, 8, 0, Math.PI * 2);
+            ctx.arc(110, 20, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#00FF00';
+            ctx.beginPath();
+            ctx.arc(90, 20, 4, 0, Math.PI * 2);
+            ctx.arc(110, 20, 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.restore();
+        drawText("Lost", x + 100, y + 230, 14);
+    }
+
+    function drawAlbanianFlag(x, y, frame) {
+        ctx.save();
+        ctx.translate(x, y);
+
+        // Pole
+        ctx.fillStyle = '#8B4513'; // Brown
+        ctx.fillRect(0, 0, 10, 200);
+
+        // Waving flag
+        ctx.fillStyle = '#FF0000'; // Red
+        ctx.beginPath();
+        ctx.moveTo(10, 10); // Top left
+        
+        let wavePath = [];
+        for (let i = 0; i <= 200; i+=10) {
+            const wave = Math.sin((i / 50) + frame * 0.05) * 10;
+            if(i === 0) ctx.lineTo(10 + i, 10 + wave);
+            else ctx.lineTo(10 + i, 10 + wave);
+            wavePath.push({x: 10 + i, y: 10 + wave});
+        }
+        
+        const lastWave = wavePath[wavePath.length - 1];
+        ctx.lineTo(lastWave.x, lastWave.y + 130); // Top right to bottom right
+
+        for (let i = wavePath.length - 1; i >= 0; i--) {
+             ctx.lineTo(wavePath[i].x, wavePath[i].y + 130);
+        }
+
+        ctx.closePath();
+        ctx.fill();
+        
+        // Simplified Eagle
+        ctx.fillStyle = '#000000';
+        
+        // Calculate center of flag with wave
+        const waveOffset = Math.sin((100 / 50) + frame * 0.05) * 10;
+        const cx = 10 + 100; // 100 is halfway across 200 width
+        const cy = 10 + waveOffset + 65; // 65 is halfway down 130 height
+
+        // Draw eagle relative to waving center
+        ctx.beginPath();
+        // Body
+        ctx.fillRect(cx - 10, cy - 15, 20, 30);
+        // Heads
+        ctx.fillRect(cx - 25, cy - 35, 15, 20);
+        ctx.fillRect(cx + 10, cy - 35, 15, 20);
+        // Beaks
+        ctx.fillRect(cx - 30, cy - 30, 5, 5);
+        ctx.fillRect(cx + 25, cy - 30, 5, 5);
+        // Wings
+        ctx.moveTo(cx - 10, cy - 10); ctx.lineTo(cx - 50, cy - 30); ctx.lineTo(cx - 40, cy + 20); ctx.closePath();
+        ctx.moveTo(cx + 10, cy - 10); ctx.lineTo(cx + 50, cy - 30); ctx.lineTo(cx + 40, cy + 20); ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    function drawBrazilianFlag(x, y, frame) {
+        ctx.save();
+        ctx.translate(x, y);
+
+        // Pole
+        ctx.fillStyle = '#8B4513'; // Brown
+        ctx.fillRect(0, 0, 10, 200);
+
+        // Waving flag base (Green Rectangle)
+        ctx.beginPath();
+        ctx.moveTo(10, 10);
+        let wavePath = [];
+        for (let i = 0; i <= 200; i+=10) {
+            const wave = Math.sin((i / 50) + frame * 0.05) * 10;
+            if(i === 0) ctx.lineTo(10 + i, 10 + wave);
+            else ctx.lineTo(10 + i, 10 + wave);
+            wavePath.push({x: 10 + i, y: 10 + wave});
+        }
+        const lastWave = wavePath[wavePath.length - 1];
+        ctx.lineTo(lastWave.x, lastWave.y + 130);
+        for (let i = wavePath.length - 1; i >= 0; i--) {
+             ctx.lineTo(wavePath[i].x, wavePath[i].y + 130);
+        }
+        ctx.closePath();
+        ctx.fillStyle = '#009739'; // Green
+        ctx.fill();
+        
+        // Yellow Rhombus (Diamond) - positioned relative to the wave
+        const rhombusCX = 10 + 100;
+        const waveOffset = Math.sin((100 / 50) + frame * 0.05) * 10; // Wave at center x
+        const rhombusCY = 10 + 65 + waveOffset; 
+        const widthFactor = 0.8;
+        const heightFactor = 0.8;
+
+        ctx.fillStyle = '#FFDD00'; // Yellow
+        ctx.beginPath();
+        ctx.moveTo(rhombusCX, rhombusCY - (65 * heightFactor)); // Top
+        ctx.lineTo(rhombusCX + (100 * widthFactor), rhombusCY);     // Right
+        ctx.lineTo(rhombusCX, rhombusCY + (65 * heightFactor)); // Bottom
+        ctx.lineTo(rhombusCX - (100 * widthFactor), rhombusCY);     // Left
+        ctx.closePath();
+        ctx.fill();
+
+        // Blue Circle - positioned relative to the wave
+        ctx.fillStyle = '#012169'; // Dark Blue
+        ctx.beginPath();
+        ctx.arc(rhombusCX, rhombusCY, 40, 0, Math.PI * 2);
+        ctx.fill();
+
+        // White band (simplified) - positioned relative to the wave
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(rhombusCX - 40, rhombusCY - 5, 80, 10); // Simplified band
+        
+        // Stars (simplified) - positioned relative to the wave
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(rhombusCX - 20, rhombusCY - 20, 3, 0, Math.PI * 2);
+        ctx.arc(rhombusCX + 15, rhombusCY - 10, 3, 0, Math.PI * 2);
+        ctx.arc(rhombusCX - 10, rhombusCY + 20, 3, 0, Math.PI * 2);
+        ctx.arc(rhombusCX + 25, rhombusCY + 25, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+
+        ctx.restore();
+    }
+
+
+    // --- State Drawing Functions ---
+    function drawStartScreen() {
+        drawText("ARE YOU READY?", canvas.width / 2, 300, 40);
+        const btn = { id: 'start', text: 'Fuck no', x: canvas.width / 2 - 150, y: 450, w: 300, h: 80 };
+        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
+        setRegions([btn]);
+    }
+
+    function drawQ1Screen() {
+        drawText("ARE YOU HARDCORE.", canvas.width / 2, 300, 32);
+        const btnYes = { id: 'yes', text: 'YES', x: canvas.width / 2 - 350, y: 450, w: 300, h: 80 };
+        const btnNo = { id: 'no', text: 'NO', x: canvas.width / 2 + 50, y: 450, w: 300, h: 80 };
+        drawButton(btnYes.text, btnYes.x, btnYes.y, btnYes.w, btnYes.h, hoverTarget === btnYes.id, false, btnYes.id);
+        drawButton(btnNo.text, btnNo.x, btnNo.y, btnNo.w, btnNo.h, hoverTarget === btnNo.id, false, btnNo.id);
+        setRegions([btnYes, btnNo]);
+    }
+
+    function drawQ2Screen() {
+        drawText("ARE YOU THE BADDEST OF THEM ALL.", canvas.width / 2, 300, 32);
+        const btnYes = { id: 'yes', text: 'YES', x: canvas.width / 2 - 350, y: 450, w: 300, h: 80 };
+        const btnNo = { id: 'no', text: 'NO', x: canvas.width / 2 + 50, y: 450, w: 300, h: 80 };
+        drawButton(btnYes.text, btnYes.x, btnYes.y, btnYes.w, btnYes.h, hoverTarget === btnYes.id, false, btnYes.id);
+        drawButton(btnNo.text, btnNo.x, btnNo.y, btnNo.w, btnNo.h, hoverTarget === btnNo.id, false, btnNo.id);
+        setRegions([btnYes, btnNo]);
+    }
+
+    function drawQ3Screen() {
+        drawText("ARE YOU:", canvas.width / 2, 150, 32);
+
+        // Positions for the options
+        const regions = [
+            { id: 'internet', x: 150, y: 300, w: 200, h: 250 },
+            { id: 'albanian', x: 500, y: 300, w: 200, h: 250 }, // Albanian/Brazilian in the middle
+            { id: 'lost', x: 850, y: 300, w: 200, h: 250 },
+        ];
+
+        drawInternetAddict(regions[0].x, regions[0].y, animationState.frame);
+
+        // Glitching Albanian/Brazilian flag logic - REVERSED
+        if (Math.random() < 0.15) { // 15% chance to glitch to Albanian flag
+            drawAlbanianFlag(regions[1].x, regions[1].y, animationState.frame);
+        } else {
+            drawBrazilianFlag(regions[1].x, regions[1].y, animationState.frame);
+        }
+        drawText("Secretly Albanian", regions[1].x + 100, regions[1].y + 230, 14);
+
+
+        drawLost(regions[2].x, regions[2].y, animationState.frame);
+
+        regions.forEach(region => {
+            if (hoverTarget === region.id) {
+                ctx.strokeStyle = '#00ff00'; /* Neon Green */
+                ctx.lineWidth = 4;
+                ctx.strokeRect(region.x - 10, region.y - 10, region.w + 20, region.h + 20);
+            }
+        });
+        
+        setRegions(regions);
+    }
+    
+    function drawEndScreen(message) {
+        drawText(message, canvas.width / 2, 300, 32);
+        const btn = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 150, y: 450, w: 300, h: 80 };
+        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
+        setRegions([btn]);
+    }
+
+    function drawEndFailScreen() {
+        drawEndScreen("Sorry, you can't continue.");
+    }
+    
+    function drawEndInternetScreen() {
+        if (imagesLoaded.greyscale === true) {
+            ctx.drawImage(imgGreyscale, 0, 0, canvas.width, canvas.height); // Stretch to fill
+        } else if (imagesLoaded.greyscale === 'error') {
+            drawText("Error loading Greyscale", canvas.width / 2, 300, 32, '#ff0000');
+        } else {
+            drawText("Loading Greyscale...", canvas.width / 2, 300, 32);
+        }
+        const btn = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 150, y: 700, w: 300, h: 80 }; // Move button to bottom
+        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
+        setRegions([btn]);
+    }
+
+    function drawEndLostScreen() {
+        if (imagesLoaded.butter === true) {
+            ctx.drawImage(imgButter, 0, 0, canvas.width, canvas.height);
+        } else if (imagesLoaded.butter === 'error') {
+            drawText("Error loading butter", canvas.width / 2, 300, 32, '#ff0000');
+        } else {
+            drawText("Loading butter...", canvas.width / 2, 300, 32);
+        }
+        const btn = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 150, y: 700, w: 300, h: 80 };
+        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
+        setRegions([btn]);
+    }
+
+    function drawEndAlbanianScreen() {
+        if (imagesLoaded.albanian === true) {
+            ctx.drawImage(imgAlbanian, 0, 0, canvas.width, canvas.height);
+        } else if (imagesLoaded.albanian === 'error') {
+            drawText("Error loading albanian", canvas.width / 2, 300, 32, '#ff0000');
+        } else {
+            drawText("Loading albanian...", canvas.width / 2, 300, 32);
+        }
+        const btn = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 150, y: 700, w: 300, h: 80 };
+        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
+        setRegions([btn]);
+    }
+
+    // --- Core Logic ---
+    function gameLoop() {
+        if (!isGameActive) {
+            return; // Stop the loop if the game is not active
+        }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        animationState.frame++;
+        
+        switch (gameState) {
+            case GAME_STATES.START: drawStartScreen(); break;
+            case GAME_STATES.Q1: drawQ1Screen(); break;
+            case GAME_STATES.Q2: drawQ2Screen(); break;
+            case GAME_STATES.Q3: drawQ3Screen(); break;
+            case GAME_STATES.END_FAIL: drawEndFailScreen(); break;
+            case GAME_STATES.END_INTERNET: drawEndInternetScreen(); break;
+            case GAME_STATES.END_LOST: drawEndLostScreen(); break;
+            case GAME_STATES.END_ALBANIAN: drawEndAlbanianScreen(); break;
+        }
+        requestAnimationFrame(gameLoop);
+    }
+    
+    // --- Event Handlers ---
+    function handleClick(event) {
+        if (!isGameActive) return;
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+
+        const regions = clickRegions[gameState] || [];
+        for (const region of regions) {
+            if (mouseX >= region.x && mouseX <= region.x + region.w &&
+                mouseY >= region.y && mouseY <= region.y + region.h) {
+                
+                switch(gameState) {
+                    case GAME_STATES.START:
+                        if (region.id === 'start') gameState = GAME_STATES.Q1;
+                        break;
+                    case GAME_STATES.Q1:
+                        if (region.id === 'yes') gameState = GAME_STATES.Q2;
+                        else if (region.id === 'no') gameState = GAME_STATES.END_FAIL;
+                        break;
+                    case GAME_STATES.Q2:
+                        if (region.id === 'yes') gameState = GAME_STATES.Q3;
+                        else if (region.id === 'no') gameState = GAME_STATES.END_FAIL;
+                        break;
+                    case GAME_STATES.Q3:
+                        if (region.id === 'internet') gameState = GAME_STATES.END_INTERNET;
+                        else if (region.id === 'lost') gameState = GAME_STATES.END_LOST;
+                        else if (region.id === 'albanian') gameState = GAME_STATES.END_ALBANIAN;
+                        break;
+                    case GAME_STATES.END_FAIL:
+                    case GAME_STATES.END_INTERNET:
+                    case GAME_STATES.END_LOST:
+                    case GAME_STATES.END_ALBANIAN:
+                        if (region.id === 'restart') initializeGame();
+                        break;
+                }
+                return; // Exit after processing click
+            }
+        }
+    }
+    
+    function drawButton(text, x, y, w, h, isHovered, isDone, id = null) {
+        ctx.strokeStyle = '#fff';
+        if(isDone) ctx.fillStyle = '#00ff00';
+        else ctx.fillStyle = isHovered ? '#00ff00' : '#555'; /* Neon Green for hover */
+        ctx.fillRect(x,y,w,h);
+        ctx.strokeRect(x,y,w,h);
+        
+        let fontSize = 16;
+        if (w < 200) fontSize = 12;
+        if (w > 400) fontSize = 24;
+
+        drawText(text, x + w/2, y + h/2 + 4, fontSize, isHovered || isDone ? '#000' : '#fff');
+    }
+    
+    function drawText(text, x, y, size = 32, color = '#fff') {
+            ctx.font = `${size}px "Press Start 2P"`;
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, x, y);
+    }
+    
+    function handleMouseMove(event) {
+        if (!isGameActive) return;
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+        const regions = clickRegions[gameState] || [];
+        hoverTarget = null;
+        canvas.style.cursor = 'default';
+        for (const region of regions) {
+             if (mouseX >= region.x && mouseX <= region.x + region.w &&
+                 mouseY >= region.y && mouseY <= region.y + region.h) {
+                 hoverTarget = region.id;
+                 canvas.style.cursor = 'pointer';
+                 break;
+             }
+        }
+    }
+
+    canvas.addEventListener('click', handleClick);
+    canvas.addEventListener('mousemove', handleMouseMove);
+
+    initializeGame();
+    gameLoop();
+
+</script>
+
+</body>
+</html>
+
+
