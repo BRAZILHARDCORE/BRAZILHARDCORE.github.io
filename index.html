@@ -409,9 +409,14 @@
     
     function drawEndScreen(message) {
         drawText(message, canvas.width / 2, 300, 32);
-        const btn = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 200, y: 450, w: 400, h: 80 }; // Centered, wider
-        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
-        setRegions([btn]);
+        
+        // --- Updated Buttons ---
+        const btnRestart = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 350, y: 450, w: 300, h: 80 };
+        const btnReady = { id: 'ready', text: 'I am ready now', x: canvas.width / 2 + 50, y: 450, w: 300, h: 80 };
+        
+        drawButton(btnRestart.text, btnRestart.x, btnRestart.y, btnRestart.w, btnRestart.h, hoverTarget === btnRestart.id, false, btnRestart.id);
+        drawButton(btnReady.text, btnReady.x, btnReady.y, btnReady.w, btnReady.h, hoverTarget === btnReady.id, false, btnReady.id);
+        setRegions([btnRestart, btnReady]);
     }
 
     function drawEndFailScreen() {
@@ -426,9 +431,14 @@
         } else {
             drawText("Loading Greyscale...", canvas.width / 2, 300, 32);
         }
-        const btn = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 200, y: 700, w: 400, h: 80 }; // Centered, wider
-        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
-        setRegions([btn]);
+        
+        // --- Updated Buttons ---
+        const btnRestart = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 350, y: 700, w: 300, h: 80 };
+        const btnReady = { id: 'ready', text: 'I am ready now', x: canvas.width / 2 + 50, y: 700, w: 300, h: 80 };
+
+        drawButton(btnRestart.text, btnRestart.x, btnRestart.y, btnRestart.w, btnRestart.h, hoverTarget === btnRestart.id, false, btnRestart.id);
+        drawButton(btnReady.text, btnReady.x, btnReady.y, btnReady.w, btnReady.h, hoverTarget === btnReady.id, false, btnReady.id);
+        setRegions([btnRestart, btnReady]);
     }
 
     function drawEndLostScreen() {
@@ -439,9 +449,14 @@
         } else {
             drawText("Loading butter...", canvas.width / 2, 300, 32);
         }
-        const btn = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 200, y: 700, w: 400, h: 80 }; // Centered, wider
-        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
-        setRegions([btn]);
+        
+        // --- Updated Buttons ---
+        const btnRestart = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 350, y: 700, w: 300, h: 80 };
+        const btnReady = { id: 'ready', text: 'I am ready now', x: canvas.width / 2 + 50, y: 700, w: 300, h: 80 };
+
+        drawButton(btnRestart.text, btnRestart.x, btnRestart.y, btnRestart.w, btnRestart.h, hoverTarget === btnRestart.id, false, btnRestart.id);
+        drawButton(btnReady.text, btnReady.x, btnReady.y, btnReady.w, btnReady.h, hoverTarget === btnReady.id, false, btnReady.id);
+        setRegions([btnRestart, btnReady]);
     }
 
     function drawEndAlbanianScreen() {
@@ -452,9 +467,14 @@
         } else {
             drawText("Loading albanian...", canvas.width / 2, 300, 32);
         }
-        const btn = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 200, y: 700, w: 400, h: 80 }; // Centered, wider
-        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
-        setRegions([btn]);
+        
+        // --- Updated Buttons ---
+        const btnRestart = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 350, y: 700, w: 300, h: 80 };
+        const btnReady = { id: 'ready', text: 'I am ready now', x: canvas.width / 2 + 50, y: 700, w: 300, h: 80 };
+
+        drawButton(btnRestart.text, btnRestart.x, btnRestart.y, btnRestart.w, btnRestart.h, hoverTarget === btnRestart.id, false, btnRestart.id);
+        drawButton(btnReady.text, btnReady.x, btnReady.y, btnReady.w, btnReady.h, hoverTarget === btnReady.id, false, btnReady.id);
+        setRegions([btnRestart, btnReady]);
     }
 
     // --- Core Logic ---
@@ -532,7 +552,12 @@
                     case GAME_STATES.END_INTERNET:
                     case GAME_STATES.END_LOST:
                     case GAME_STATES.END_ALBANIAN:
-                        if (region.id === 'restart') initializeGame();
+                        if (region.id === 'restart') {
+                            initializeGame();
+                        } else if (region.id === 'ready') {
+                            // Navigate to the specified URL
+                            window.location.href = 'https://www.shopify.com/de';
+                        }
                         break;
                 }
                 hoverTarget = null; // Clear hover after click
@@ -644,4 +669,5 @@
 
 </body>
 </html>
+
 
