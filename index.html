@@ -2,52 +2,69 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bui Project - The Adventure</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Bui Project - The Adventure (Mobile)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            background-color: #1a1a1a;
+        /* Reset margins and padding for a full-screen experience */
+        html, body {
+            background-color: #000;
             color: #fff;
-            font-family: 'Press Start 2P', cursive;
+            font-family: 'Press+Start+2P', cursive;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            height: 100%;
+            width: 100%;
             margin: 0;
-            overflow: hidden;
-            flex-direction: column;
+            padding: 0;
+            overflow: hidden; /* Prevent scrolling */
         }
 
         .game-container {
-            border: 8px solid #444;
-            border-radius: 15px;
+            border: none; /* Remove desktop border */
+            border-radius: 0;
             background-color: #000;
-            padding: 20px;
-            box-shadow: 0 0 25px #ff00ff, 0 0 15px #00ffff inset;
+            padding: 0;
+            box-shadow: none; /* Remove desktop shadow */
             position: relative;
+            width: 100vw; /* Fill width */
+            height: 100vh; /* Fill height */
+            box-sizing: border-box;
         }
 
         canvas {
             background-color: #0d0d0d;
             display: block;
-            border-radius: 5px;
-            border: 2px solid #333;
+            border: none;
+            border-radius: 0;
             cursor: pointer;
+            width: 100%; /* Canvas fills container */
+            height: 100%; /* Canvas fills container */
+            touch-action: none; /* Disable double-tap zoom etc. */
         }
         
     </style>
 </head>
 <body>
     <div class="game-container" id="game-container">
-        <canvas id="gameCanvas" width="1200" height="800"></canvas>
+        <!-- Canvas width and height will be set by JavaScript -->
+        <canvas id="gameCanvas"></canvas>
     </div>
 
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
+
+    // --- Base coordinate system ---
+    const baseWidth = 1200;
+    const baseHeight = 800;
+    let scale = 1;
+    let offsetX = 0;
+    let offsetY = 0;
+
 
     // --- Image Preloading ---
     let imgGreyscale = new Image();
@@ -93,6 +110,22 @@
     let animationState = {};
     let clickRegions = {};
     let isGameActive = true;
+
+    // --- Canvas Setup and Scaling ---
+    function setupCanvas() {
+        // Set canvas to physical pixel size
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Calculate scale to fit and maintain aspect ratio
+        scale = Math.min(canvas.width / baseWidth, canvas.height / baseHeight);
+
+        // Calculate centered offsets
+        const newWidth = baseWidth * scale;
+        const newHeight = baseHeight * scale;
+        offsetX = (canvas.width - newWidth) / 2;
+        offsetY = (canvas.height - newHeight) / 2;
+    }
     
     function setRegions(regions) {
         clickRegions[gameState] = regions;
@@ -104,6 +137,7 @@
     }
 
     // --- Drawing Assets ---
+    // (All drawing functions remain the same as they use the 1200x800 coordinate system)
 
     function drawInternetAddict(x, y, frame) {
         ctx.save();
@@ -314,40 +348,46 @@
     }
 
 
-    // --- State Drawing Functions ---
+    // --- State Drawing Functions (Modified for Mobile Layout) ---
     function drawStartScreen() {
-        drawText("ARE YOU READY?", canvas.width / 2, 300, 40);
-        const btn = { id: 'start', text: 'Fuck no', x: canvas.width / 2 - 150, y: 450, w: 300, h: 80 };
+        drawText("ARE YOU READY?", baseWidth / 2, 300, 40);
+        const btn = { id: 'start', text: 'Fuck no', x: baseWidth / 2 - 200, y: 450, w: 400, h: 100 };
         drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
         setRegions([btn]);
     }
 
     function drawQ1Screen() {
-        drawText("ARE YOU HARDCORE.", canvas.width / 2, 300, 32);
-        const btnYes = { id: 'yes', text: 'YES', x: canvas.width / 2 - 350, y: 450, w: 300, h: 80 };
-        const btnNo = { id: 'no', text: 'NO', x: canvas.width / 2 + 50, y: 450, w: 300, h: 80 };
+        drawText("ARE YOU HARDCORE.", baseWidth / 2, 300, 32);
+        // Stacked buttons for mobile
+        const btnYes = { id: 'yes', text: 'YES', x: baseWidth / 2 - 200, y: 400, w: 400, h: 100 };
+        const btnNo = { id: 'no', text: 'NO', x: baseWidth / 2 - 200, y: 520, w: 400, h: 100 };
         drawButton(btnYes.text, btnYes.x, btnYes.y, btnYes.w, btnYes.h, hoverTarget === btnYes.id, false, btnYes.id);
         drawButton(btnNo.text, btnNo.x, btnNo.y, btnNo.w, btnNo.h, hoverTarget === btnNo.id, false, btnNo.id);
         setRegions([btnYes, btnNo]);
     }
 
     function drawQ2Screen() {
-        drawText("ARE YOU THE BADDEST OF THEM ALL.", canvas.width / 2, 300, 32);
-        const btnYes = { id: 'yes', text: 'YES', x: canvas.width / 2 - 350, y: 450, w: 300, h: 80 };
-        const btnNo = { id: 'no', text: 'NO', x: canvas.width / 2 + 50, y: 450, w: 300, h: 80 };
+        drawText("ARE YOU THE BADDEST OF THEM ALL.", baseWidth / 2, 300, 32);
+        // Stacked buttons for mobile
+        const btnYes = { id: 'yes', text: 'YES', x: baseWidth / 2 - 200, y: 400, w: 400, h: 100 };
+        const btnNo = { id: 'no', text: 'NO', x: baseWidth / 2 - 200, y: 520, w: 400, h: 100 };
         drawButton(btnYes.text, btnYes.x, btnYes.y, btnYes.w, btnYes.h, hoverTarget === btnYes.id, false, btnYes.id);
         drawButton(btnNo.text, btnNo.x, btnNo.y, btnNo.w, btnNo.h, hoverTarget === btnNo.id, false, btnNo.id);
         setRegions([btnYes, btnNo]);
     }
 
     function drawQ3Screen() {
-        drawText("ARE YOU:", canvas.width / 2, 150, 32);
+        drawText("ARE YOU:", baseWidth / 2, 80, 32);
 
-        // Positions for the options
+        // Stacked options for mobile
+        const regionWidth = 200;
+        const regionHeight = 230;
+        const centerX = (baseWidth - regionWidth) / 2; // Center = 500
+
         const regions = [
-            { id: 'internet', x: 150, y: 300, w: 200, h: 250 },
-            { id: 'albanian', x: 500, y: 300, w: 200, h: 250 }, // Albanian/Brazilian in the middle
-            { id: 'lost', x: 850, y: 300, w: 200, h: 250 },
+            { id: 'internet', x: centerX, y: 120, w: regionWidth, h: regionHeight },
+            { id: 'albanian', x: centerX, y: 350, w: regionWidth, h: regionHeight }, // Albanian/Brazilian in the middle
+            { id: 'lost', x: centerX, y: 580, w: regionWidth, h: regionHeight },
         ];
 
         drawInternetAddict(regions[0].x, regions[0].y, animationState.frame);
@@ -375,8 +415,8 @@
     }
     
     function drawEndScreen(message) {
-        drawText(message, canvas.width / 2, 300, 32);
-        const btn = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 150, y: 450, w: 300, h: 80 };
+        drawText(message, baseWidth / 2, 300, 32);
+        const btn = { id: 'restart', text: 'RESTART', x: baseWidth / 2 - 200, y: 450, w: 400, h: 100 };
         drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
         setRegions([btn]);
     }
@@ -387,39 +427,39 @@
     
     function drawEndInternetScreen() {
         if (imagesLoaded.greyscale === true) {
-            ctx.drawImage(imgGreyscale, 0, 0, canvas.width, canvas.height); // Stretch to fill
+            ctx.drawImage(imgGreyscale, 0, 0, baseWidth, baseHeight); // Draw to base coordinates
         } else if (imagesLoaded.greyscale === 'error') {
-            drawText("Error loading Greyscale", canvas.width / 2, 300, 32, '#ff0000');
+            drawText("Error loading Greyscale", baseWidth / 2, 300, 32, '#ff0000');
         } else {
-            drawText("Loading Greyscale...", canvas.width / 2, 300, 32);
+            drawText("Loading Greyscale...", baseWidth / 2, 300, 32);
         }
-        const btn = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 150, y: 700, w: 300, h: 80 }; // Move button to bottom
+        const btn = { id: 'restart', text: 'RESTART', x: baseWidth / 2 - 200, y: 700, w: 400, h: 80 };
         drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
         setRegions([btn]);
     }
 
     function drawEndLostScreen() {
         if (imagesLoaded.butter === true) {
-            ctx.drawImage(imgButter, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(imgButter, 0, 0, baseWidth, baseHeight);
         } else if (imagesLoaded.butter === 'error') {
-            drawText("Error loading butter", canvas.width / 2, 300, 32, '#ff0000');
+            drawText("Error loading butter", baseWidth / 2, 300, 32, '#ff0000');
         } else {
-            drawText("Loading butter...", canvas.width / 2, 300, 32);
+            drawText("Loading butter...", baseWidth / 2, 300, 32);
         }
-        const btn = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 150, y: 700, w: 300, h: 80 };
+        const btn = { id: 'restart', text: 'RESTART', x: baseWidth / 2 - 200, y: 700, w: 400, h: 80 };
         drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
         setRegions([btn]);
     }
 
     function drawEndAlbanianScreen() {
         if (imagesLoaded.albanian === true) {
-            ctx.drawImage(imgAlbanian, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(imgAlbanian, 0, 0, baseWidth, baseHeight);
         } else if (imagesLoaded.albanian === 'error') {
-            drawText("Error loading albanian", canvas.width / 2, 300, 32, '#ff0000');
+            drawText("Error loading albanian", baseWidth / 2, 300, 32, '#ff0000');
         } else {
-            drawText("Loading albanian...", canvas.width / 2, 300, 32);
+            drawText("Loading albanian...", baseWidth / 2, 300, 32);
         }
-        const btn = { id: 'restart', text: 'RESTART', x: canvas.width / 2 - 150, y: 700, w: 300, h: 80 };
+        const btn = { id: 'restart', text: 'RESTART', x: baseWidth / 2 - 200, y: 700, w: 400, h: 80 };
         drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
         setRegions([btn]);
     }
@@ -429,9 +469,16 @@
         if (!isGameActive) {
             return; // Stop the loop if the game is not active
         }
+
+        // Clear the *entire* physical canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        animationState.frame++;
         
+        // Save context, apply scaling and offset
+        ctx.save();
+        ctx.translate(offsetX, offsetY);
+        ctx.scale(scale, scale);
+
+        // --- Draw game elements inside the 1200x800 coordinate system ---
         switch (gameState) {
             case GAME_STATES.START: drawStartScreen(); break;
             case GAME_STATES.Q1: drawQ1Screen(); break;
@@ -442,15 +489,41 @@
             case GAME_STATES.END_LOST: drawEndLostScreen(); break;
             case GAME_STATES.END_ALBANIAN: drawEndAlbanianScreen(); break;
         }
+
+        // Restore context to remove scaling
+        ctx.restore();
+        
         requestAnimationFrame(gameLoop);
     }
     
-    // --- Event Handlers ---
+    // --- Event Handlers (Updated for Scaling and Touch) ---
+    function getTransformedCoords(event) {
+        event.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        let clientX, clientY;
+
+        if (event.type.startsWith('touch')) {
+            clientX = (event.touches[0] || event.changedTouches[0]).clientX;
+            clientY = (event.touches[0] || event.changedTouches[0]).clientY;
+        } else {
+            clientX = event.clientX;
+            clientY = event.clientY;
+        }
+
+        const mouseX_raw = clientX - rect.left;
+        const mouseY_raw = clientY - rect.top;
+
+        // Reverse the scaling and offset
+        const mouseX = (mouseX_raw - offsetX) / scale;
+        const mouseY = (mouseY_raw - offsetY) / scale;
+
+        return { mouseX, mouseY };
+    }
+
     function handleClick(event) {
         if (!isGameActive) return;
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = event.clientX - rect.left;
-        const mouseY = event.clientY - rect.top;
+        
+        const { mouseX, mouseY } = getTransformedCoords(event);
 
         const regions = clickRegions[gameState] || [];
         for (const region of regions) {
@@ -493,9 +566,9 @@
         ctx.fillRect(x,y,w,h);
         ctx.strokeRect(x,y,w,h);
         
-        let fontSize = 16;
-        if (w < 200) fontSize = 12;
-        if (w > 400) fontSize = 24;
+        let fontSize = 24; // Larger base font for mobile buttons
+        if(text.length > 10) fontSize = 16;
+        if(text.length > 20) fontSize = 12;
 
         drawText(text, x + w/2, y + h/2 + 4, fontSize, isHovered || isDone ? '#000' : '#fff');
     }
@@ -505,14 +578,35 @@
             ctx.fillStyle = color;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(text, x, y);
+            
+            // Basic text wrapping for long titles
+            const maxWidth = baseWidth - 100; // 50px padding
+            if(ctx.measureText(text).width > maxWidth) {
+                const words = text.split(' ');
+                let line = '';
+                let testLine = '';
+                let yOffset = 0;
+                for(let n = 0; n < words.length; n++) {
+                    testLine = line + words[n] + ' ';
+                    if (ctx.measureText(testLine).width > maxWidth) {
+                        ctx.fillText(line, x, y + yOffset);
+                        line = words[n] + ' ';
+                        yOffset += size + 4; // Move to next line
+                    } else {
+                        line = testLine;
+                    }
+                }
+                ctx.fillText(line, x, y + yOffset);
+            } else {
+                ctx.fillText(text, x, y);
+            }
     }
     
     function handleMouseMove(event) {
         if (!isGameActive) return;
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = event.clientX - rect.left;
-        const mouseY = event.clientY - rect.top;
+        
+        const { mouseX, mouseY } = getTransformedCoords(event);
+
         const regions = clickRegions[gameState] || [];
         hoverTarget = null;
         canvas.style.cursor = 'default';
@@ -526,9 +620,17 @@
         }
     }
 
+    // --- Initial Setup ---
     canvas.addEventListener('click', handleClick);
-    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('touchstart', handleClick, { passive: false }); // Use passive: false to allow preventDefault
 
+    // Mobile doesn't really have "hover", but we'll leave mousemove for desktop/debug
+    canvas.addEventListener('mousemove', handleMouseMove);
+    // canvas.addEventListener('touchmove', handleMouseMove, { passive: false }); // Can be noisy, enable if hover-like behavior is needed
+
+    window.addEventListener('resize', setupCanvas);
+
+    setupCanvas(); // Initial setup
     initializeGame();
     gameLoop();
 
@@ -536,5 +638,3 @@
 
 </body>
 </html>
-
-
