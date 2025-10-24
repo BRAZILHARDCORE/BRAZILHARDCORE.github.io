@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <!-- Viewport settings for a true full-screen mobile experience -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Bui Project - The Adventure (Mobile)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,7 +13,7 @@
         html, body {
             background-color: #000;
             color: #fff;
-            font-family: 'Press+Start+2P', cursive;
+            font-family: 'Press Start 2P', cursive;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -24,15 +25,16 @@
         }
 
         .game-container {
-            border: none; /* Remove desktop border */
+            border: none;
             border-radius: 0;
             background-color: #000;
             padding: 0;
-            box-shadow: none; /* Remove desktop shadow */
+            box-shadow: none;
             position: relative;
             width: 100vw; /* Fill width */
             height: 100vh; /* Fill height */
             box-sizing: border-box;
+            display: block; /* Will be controlled by JS */
         }
 
         canvas {
@@ -46,9 +48,32 @@
             touch-action: none; /* Disable double-tap zoom etc. */
         }
         
+        /* This is the "Flip your phone" message screen */
+        #rotate-overlay {
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: #000;
+            color: #fff;
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 18px;
+            line-height: 1.5;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
+    <!-- New overlay for landscape orientation -->
+    <div id="rotate-overlay">
+        Please rotate your<br>phone to portrait mode.
+    </div>
+
     <div class="game-container" id="game-container">
         <!-- Canvas width and height will be set by JavaScript -->
         <canvas id="gameCanvas"></canvas>
@@ -57,10 +82,12 @@
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
+    const rotateOverlay = document.getElementById('rotate-overlay');
+    const gameContainer = document.getElementById('game-container');
 
-    // --- Base coordinate system ---
-    const baseWidth = 1200;
-    const baseHeight = 800;
+    // --- Base coordinate system (PORTRAIT) ---
+    const baseWidth = 800;
+    const baseHeight = 1200;
     let scale = 1;
     let offsetX = 0;
     let offsetY = 0;
@@ -78,17 +105,14 @@
         lost: "https://ik.imagekit.io/ex6ksvxsvk/butter?updatedAt=1761322400651"
     };
     
-    // Set error handlers
     imgGreyscale.onerror = () => { console.error("Failed to load Greyscale image."); imagesLoaded.greyscale = 'error'; };
     imgAlbanian.onerror = () => { console.error("Failed to load Albanian image."); imagesLoaded.albanian = 'error'; };
     imgButter.onerror = () => { console.error("Failed to load Butter image."); imagesLoaded.butter = 'error'; };
 
-    // Set onload handlers
     imgGreyscale.onload = () => { console.log("Greyscale image loaded."); imagesLoaded.greyscale = true; };
     imgAlbanian.onload = () => { console.log("Albanian image loaded."); imagesLoaded.albanian = true; };
     imgButter.onload = () => { console.log("Butter image loaded."); imagesLoaded.butter = true; };
 
-    // Set src to start loading
     imgGreyscale.src = urls.internet;
     imgAlbanian.src = urls.albanian;
     imgButter.src = urls.lost;
@@ -111,20 +135,33 @@
     let clickRegions = {};
     let isGameActive = true;
 
-    // --- Canvas Setup and Scaling ---
-    function setupCanvas() {
-        // Set canvas to physical pixel size
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+    // --- Canvas Setup, Scaling, and Orientation Check ---
+    function setupCanvasAndOrientation() {
+        // Check orientation first
+        if (window.innerWidth > window.innerHeight) {
+            // Landscape
+            rotateOverlay.style.display = 'flex';
+            gameContainer.style.display = 'none';
+            isGameActive = false;
+        } else {
+            // Portrait
+            rotateOverlay.style.display = 'none';
+            gameContainer.style.display = 'block';
+            isGameActive = true;
 
-        // Calculate scale to fit and maintain aspect ratio
-        scale = Math.min(canvas.width / baseWidth, canvas.height / baseHeight);
+            // Set canvas to physical pixel size
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
 
-        // Calculate centered offsets
-        const newWidth = baseWidth * scale;
-        const newHeight = baseHeight * scale;
-        offsetX = (canvas.width - newWidth) / 2;
-        offsetY = (canvas.height - newHeight) / 2;
+            // Calculate scale to fit and maintain aspect ratio
+            scale = Math.min(canvas.width / baseWidth, canvas.height / baseHeight);
+
+            // Calculate centered offsets
+            const newWidth = baseWidth * scale;
+            const newHeight = baseHeight * scale;
+            offsetX = (canvas.width - newWidth) / 2;
+            offsetY = (canvas.height - newHeight) / 2;
+        }
     }
     
     function setRegions(regions) {
@@ -136,40 +173,32 @@
         gameState = GAME_STATES.START;
     }
 
-    // --- Drawing Assets ---
-    // (All drawing functions remain the same as they use the 1200x800 coordinate system)
-
+    // --- Drawing Assets (using 800x1200 coordinate system) ---
     function drawInternetAddict(x, y, frame) {
         ctx.save();
         ctx.translate(x, y);
 
-        // Grey character
         ctx.fillStyle = '#888888';
         ctx.fillRect(50, 50, 100, 150); // Body
         ctx.beginPath();
         ctx.arc(100, 25, 25, 0, Math.PI * 2); // Head
         ctx.fill();
 
-        // Phone
-        // Apply glowing effect to phone
-        const glowAlpha = Math.abs(Math.sin(frame * 0.05)); // Pulsating glow
+        const glowAlpha = Math.abs(Math.sin(frame * 0.05));
         ctx.shadowColor = `rgba(0, 255, 0, ${glowAlpha})`;
         ctx.shadowBlur = 15;
-        ctx.fillStyle = '#00ff00'; // Neon green for the glowing phone
-        ctx.fillRect(160, 100, 30, 50); // Phone body
-        ctx.shadowBlur = 0; // Reset shadow for other drawings
+        ctx.fillStyle = '#00ff00';
+        ctx.fillRect(160, 100, 30, 50);
+        ctx.shadowBlur = 0; 
 
-        // Phone screen (darker green inside the glowing phone)
         ctx.fillStyle = '#008800'; 
         ctx.fillRect(165, 105, 20, 40); 
 
-        // Soul stream
         ctx.strokeStyle = `rgba(200, 200, 255, 0.6)`;
         ctx.lineWidth = 5;
         ctx.beginPath();
-        ctx.moveTo(100, 25); // From character's head
+        ctx.moveTo(100, 25);
         
-        // Connect to the phone
         const phoneCenterX = 160 + 15;
         const phoneCenterY = 100 + 25;
         const numSegments = 30;
@@ -177,7 +206,7 @@
             const t = i / numSegments;
             const currentX = 100 + (phoneCenterX - 100) * t;
             const currentY = 25 + (phoneCenterY - 25) * t;
-            const wave = Math.sin((i * 0.5) + frame * 0.1) * (1 - t) * 10; // Wave decreases as it reaches the phone
+            const wave = Math.sin((i * 0.5) + frame * 0.1) * (1 - t) * 10;
             ctx.lineTo(currentX + wave, currentY);
         }
         ctx.stroke();
@@ -192,20 +221,17 @@
 
         const phase = (frame % 300);
         
-        // Character
         ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(50, 50, 100, 150); // Body
+        ctx.fillRect(50, 50, 100, 150);
         ctx.beginPath();
-        ctx.arc(100, 25, 25, 0, Math.PI * 2); // Head
+        ctx.arc(100, 25, 25, 0, Math.PI * 2);
         ctx.fill();
 
         if (phase < 100) {
-            // Hand moving pill to mouth
-            ctx.fillStyle = '#00FF00'; // Neon green pill
+            ctx.fillStyle = '#00FF00';
             const pillY = 100 - (phase * 0.8);
             ctx.fillRect(110, pillY, 15, 10);
         } else {
-            // Eyes glow
             const glowAlpha = Math.abs(Math.sin(frame * 0.1));
             ctx.fillStyle = `rgba(0, 255, 0, ${glowAlpha})`;
             ctx.beginPath();
@@ -227,76 +253,15 @@
     function drawAlbanianFlag(x, y, frame) {
         ctx.save();
         ctx.translate(x, y);
-
-        // Pole
-        ctx.fillStyle = '#8B4513'; // Brown
+        ctx.fillStyle = '#8B4513';
         ctx.fillRect(0, 0, 10, 200);
-
-        // Waving flag
-        ctx.fillStyle = '#FF0000'; // Red
-        ctx.beginPath();
-        ctx.moveTo(10, 10); // Top left
-        
-        let wavePath = [];
-        for (let i = 0; i <= 200; i+=10) {
-            const wave = Math.sin((i / 50) + frame * 0.05) * 10;
-            if(i === 0) ctx.lineTo(10 + i, 10 + wave);
-            else ctx.lineTo(10 + i, 10 + wave);
-            wavePath.push({x: 10 + i, y: 10 + wave});
-        }
-        
-        const lastWave = wavePath[wavePath.length - 1];
-        ctx.lineTo(lastWave.x, lastWave.y + 130); // Top right to bottom right
-
-        for (let i = wavePath.length - 1; i >= 0; i--) {
-             ctx.lineTo(wavePath[i].x, wavePath[i].y + 130);
-        }
-
-        ctx.closePath();
-        ctx.fill();
-        
-        // Simplified Eagle
-        ctx.fillStyle = '#000000';
-        
-        // Calculate center of flag with wave
-        const waveOffset = Math.sin((100 / 50) + frame * 0.05) * 10;
-        const cx = 10 + 100; // 100 is halfway across 200 width
-        const cy = 10 + waveOffset + 65; // 65 is halfway down 130 height
-
-        // Draw eagle relative to waving center
-        ctx.beginPath();
-        // Body
-        ctx.fillRect(cx - 10, cy - 15, 20, 30);
-        // Heads
-        ctx.fillRect(cx - 25, cy - 35, 15, 20);
-        ctx.fillRect(cx + 10, cy - 35, 15, 20);
-        // Beaks
-        ctx.fillRect(cx - 30, cy - 30, 5, 5);
-        ctx.fillRect(cx + 25, cy - 30, 5, 5);
-        // Wings
-        ctx.moveTo(cx - 10, cy - 10); ctx.lineTo(cx - 50, cy - 30); ctx.lineTo(cx - 40, cy + 20); ctx.closePath();
-        ctx.moveTo(cx + 10, cy - 10); ctx.lineTo(cx + 50, cy - 30); ctx.lineTo(cx + 40, cy + 20); ctx.closePath();
-        ctx.fill();
-
-        ctx.restore();
-    }
-
-    function drawBrazilianFlag(x, y, frame) {
-        ctx.save();
-        ctx.translate(x, y);
-
-        // Pole
-        ctx.fillStyle = '#8B4513'; // Brown
-        ctx.fillRect(0, 0, 10, 200);
-
-        // Waving flag base (Green Rectangle)
+        ctx.fillStyle = '#FF0000';
         ctx.beginPath();
         ctx.moveTo(10, 10);
         let wavePath = [];
         for (let i = 0; i <= 200; i+=10) {
             const wave = Math.sin((i / 50) + frame * 0.05) * 10;
-            if(i === 0) ctx.lineTo(10 + i, 10 + wave);
-            else ctx.lineTo(10 + i, 10 + wave);
+            ctx.lineTo(10 + i, 10 + wave);
             wavePath.push({x: 10 + i, y: 10 + wave});
         }
         const lastWave = wavePath[wavePath.length - 1];
@@ -305,36 +270,63 @@
              ctx.lineTo(wavePath[i].x, wavePath[i].y + 130);
         }
         ctx.closePath();
-        ctx.fillStyle = '#009739'; // Green
         ctx.fill();
-        
-        // Yellow Rhombus (Diamond) - positioned relative to the wave
+        ctx.fillStyle = '#000000';
+        const waveOffset = Math.sin((100 / 50) + frame * 0.05) * 10;
+        const cx = 10 + 100;
+        const cy = 10 + waveOffset + 65;
+        ctx.beginPath();
+        ctx.fillRect(cx - 10, cy - 15, 20, 30);
+        ctx.fillRect(cx - 25, cy - 35, 15, 20);
+        ctx.fillRect(cx + 10, cy - 35, 15, 20);
+        ctx.fillRect(cx - 30, cy - 30, 5, 5);
+        ctx.fillRect(cx + 25, cy - 30, 5, 5);
+        ctx.moveTo(cx - 10, cy - 10); ctx.lineTo(cx - 50, cy - 30); ctx.lineTo(cx - 40, cy + 20); ctx.closePath();
+        ctx.moveTo(cx + 10, cy - 10); ctx.lineTo(cx + 50, cy - 30); ctx.lineTo(cx + 40, cy + 20); ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function drawBrazilianFlag(x, y, frame) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(0, 0, 10, 200);
+        ctx.beginPath();
+        ctx.moveTo(10, 10);
+        let wavePath = [];
+        for (let i = 0; i <= 200; i+=10) {
+            const wave = Math.sin((i / 50) + frame * 0.05) * 10;
+            ctx.lineTo(10 + i, 10 + wave);
+            wavePath.push({x: 10 + i, y: 10 + wave});
+        }
+        const lastWave = wavePath[wavePath.length - 1];
+        ctx.lineTo(lastWave.x, lastWave.y + 130);
+        for (let i = wavePath.length - 1; i >= 0; i--) {
+             ctx.lineTo(wavePath[i].x, wavePath[i].y + 130);
+        }
+        ctx.closePath();
+        ctx.fillStyle = '#009739';
+        ctx.fill();
         const rhombusCX = 10 + 100;
-        const waveOffset = Math.sin((100 / 50) + frame * 0.05) * 10; // Wave at center x
+        const waveOffset = Math.sin((100 / 50) + frame * 0.05) * 10;
         const rhombusCY = 10 + 65 + waveOffset; 
         const widthFactor = 0.8;
         const heightFactor = 0.8;
-
-        ctx.fillStyle = '#FFDD00'; // Yellow
+        ctx.fillStyle = '#FFDD00';
         ctx.beginPath();
-        ctx.moveTo(rhombusCX, rhombusCY - (65 * heightFactor)); // Top
-        ctx.lineTo(rhombusCX + (100 * widthFactor), rhombusCY);     // Right
-        ctx.lineTo(rhombusCX, rhombusCY + (65 * heightFactor)); // Bottom
-        ctx.lineTo(rhombusCX - (100 * widthFactor), rhombusCY);     // Left
+        ctx.moveTo(rhombusCX, rhombusCY - (65 * heightFactor));
+        ctx.lineTo(rhombusCX + (100 * widthFactor), rhombusCY);
+        ctx.lineTo(rhombusCX, rhombusCY + (65 * heightFactor));
+        ctx.lineTo(rhombusCX - (100 * widthFactor), rhombusCY);
         ctx.closePath();
         ctx.fill();
-
-        // Blue Circle - positioned relative to the wave
-        ctx.fillStyle = '#012169'; // Dark Blue
+        ctx.fillStyle = '#012169';
         ctx.beginPath();
         ctx.arc(rhombusCX, rhombusCY, 40, 0, Math.PI * 2);
         ctx.fill();
-
-        // White band (simplified) - positioned relative to the wave
         ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(rhombusCX - 40, rhombusCY - 5, 80, 10); // Simplified band
-        
-        // Stars (simplified) - positioned relative to the wave
+        ctx.fillRect(rhombusCX - 40, rhombusCY - 5, 80, 10);
         ctx.fillStyle = '#FFFFFF';
         ctx.beginPath();
         ctx.arc(rhombusCX - 20, rhombusCY - 20, 3, 0, Math.PI * 2);
@@ -342,70 +334,73 @@
         ctx.arc(rhombusCX - 10, rhombusCY + 20, 3, 0, Math.PI * 2);
         ctx.arc(rhombusCX + 25, rhombusCY + 25, 3, 0, Math.PI * 2);
         ctx.fill();
-
-
         ctx.restore();
     }
 
+    // --- Helper function to draw "contain" image ---
+    function drawImageContain(img) {
+        const hRatio = baseWidth / img.width;
+        const vRatio = baseHeight / img.height;
+        const ratio = Math.min(hRatio, vRatio); // Use min for "contain"
+        const centerShiftX = (baseWidth - img.width * ratio) / 2;
+        const centerShiftY = (baseHeight - img.height * ratio) / 2;
+        ctx.drawImage(img, 0, 0, img.width, img.height,
+                      centerShiftX, centerShiftY, img.width * ratio, img.height * ratio);
+    }
 
-    // --- State Drawing Functions (Modified for Mobile Layout) ---
+    // --- State Drawing Functions (Portrait Layout) ---
     function drawStartScreen() {
-        drawText("ARE YOU READY?", baseWidth / 2, 300, 40);
-        const btn = { id: 'start', text: 'Fuck no', x: baseWidth / 2 - 200, y: 450, w: 400, h: 100 };
+        drawText("ARE YOU READY?", baseWidth / 2, 400, 40); // Centered text
+        const btn = { id: 'start', text: 'Fuck no', x: 150, y: 550, w: 500, h: 100 };
         drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
         setRegions([btn]);
     }
 
     function drawQ1Screen() {
-        drawText("ARE YOU HARDCORE.", baseWidth / 2, 300, 32);
-        // Stacked buttons for mobile
-        const btnYes = { id: 'yes', text: 'YES', x: baseWidth / 2 - 200, y: 400, w: 400, h: 100 };
-        const btnNo = { id: 'no', text: 'NO', x: baseWidth / 2 - 200, y: 520, w: 400, h: 100 };
+        drawText("ARE YOU HARDCORE.", baseWidth / 2, 400, 32);
+        const btnYes = { id: 'yes', text: 'YES', x: 150, y: 550, w: 500, h: 100 };
+        const btnNo = { id: 'no', text: 'NO', x: 150, y: 670, w: 500, h: 100 };
         drawButton(btnYes.text, btnYes.x, btnYes.y, btnYes.w, btnYes.h, hoverTarget === btnYes.id, false, btnYes.id);
         drawButton(btnNo.text, btnNo.x, btnNo.y, btnNo.w, btnNo.h, hoverTarget === btnNo.id, false, btnNo.id);
         setRegions([btnYes, btnNo]);
     }
 
     function drawQ2Screen() {
-        drawText("ARE YOU THE BADDEST OF THEM ALL.", baseWidth / 2, 300, 32);
-        // Stacked buttons for mobile
-        const btnYes = { id: 'yes', text: 'YES', x: baseWidth / 2 - 200, y: 400, w: 400, h: 100 };
-        const btnNo = { id: 'no', text: 'NO', x: baseWidth / 2 - 200, y: 520, w: 400, h: 100 };
+        drawText("ARE YOU THE BADDEST OF THEM ALL.", baseWidth / 2, 400, 32);
+        const btnYes = { id: 'yes', text: 'YES', x: 150, y: 550, w: 500, h: 100 };
+        const btnNo = { id: 'no', text: 'NO', x: 150, y: 670, w: 500, h: 100 };
         drawButton(btnYes.text, btnYes.x, btnYes.y, btnYes.w, btnYes.h, hoverTarget === btnYes.id, false, btnYes.id);
         drawButton(btnNo.text, btnNo.x, btnNo.y, btnNo.w, btnNo.h, hoverTarget === btnNo.id, false, btnNo.id);
         setRegions([btnYes, btnNo]);
     }
 
     function drawQ3Screen() {
-        drawText("ARE YOU:", baseWidth / 2, 80, 32);
+        drawText("ARE YOU:", baseWidth / 2, 100, 32);
 
-        // Stacked options for mobile
         const regionWidth = 200;
         const regionHeight = 230;
-        const centerX = (baseWidth - regionWidth) / 2; // Center = 500
+        const centerX = (baseWidth - regionWidth) / 2; // 300
 
         const regions = [
-            { id: 'internet', x: centerX, y: 120, w: regionWidth, h: regionHeight },
-            { id: 'albanian', x: centerX, y: 350, w: regionWidth, h: regionHeight }, // Albanian/Brazilian in the middle
-            { id: 'lost', x: centerX, y: 580, w: regionWidth, h: regionHeight },
+            { id: 'internet', x: centerX, y: 200, w: regionWidth, h: regionHeight },
+            { id: 'albanian', x: centerX, y: 450, w: regionWidth, h: regionHeight },
+            { id: 'lost', x: centerX, y: 700, w: regionWidth, h: regionHeight },
         ];
 
         drawInternetAddict(regions[0].x, regions[0].y, animationState.frame);
 
-        // Glitching Albanian/Brazilian flag logic - REVERSED
-        if (Math.random() < 0.15) { // 15% chance to glitch to Albanian flag
+        if (Math.random() < 0.15) {
             drawAlbanianFlag(regions[1].x, regions[1].y, animationState.frame);
         } else {
             drawBrazilianFlag(regions[1].x, regions[1].y, animationState.frame);
         }
         drawText("Secretly Albanian", regions[1].x + 100, regions[1].y + 230, 14);
 
-
         drawLost(regions[2].x, regions[2].y, animationState.frame);
 
         regions.forEach(region => {
             if (hoverTarget === region.id) {
-                ctx.strokeStyle = '#00ff00'; /* Neon Green */
+                ctx.strokeStyle = '#00ff00';
                 ctx.lineWidth = 4;
                 ctx.strokeRect(region.x - 10, region.y - 10, region.w + 20, region.h + 20);
             }
@@ -414,71 +409,77 @@
         setRegions(regions);
     }
     
-    function drawEndScreen(message) {
-        drawText(message, baseWidth / 2, 300, 32);
-        const btn = { id: 'restart', text: 'RESTART', x: baseWidth / 2 - 200, y: 450, w: 400, h: 100 };
-        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
-        setRegions([btn]);
-    }
+    // --- End Screens (All updated with both buttons) ---
 
     function drawEndFailScreen() {
-        drawEndScreen("Sorry, you can't continue.");
+        drawText("Sorry, you can't continue.", baseWidth / 2, 400, 32);
+        const btnRestart = { id: 'restart', text: 'restart', x: 150, y: 550, w: 500, h: 100 };
+        const btnReady = { id: 'ready', text: 'I am ready now', x: 150, y: 670, w: 500, h: 100 };
+        drawButton(btnRestart.text, btnRestart.x, btnRestart.y, btnRestart.w, btnRestart.h, hoverTarget === btnRestart.id, false, btnRestart.id);
+        drawButton(btnReady.text, btnReady.x, btnReady.y, btnReady.w, btnReady.h, hoverTarget === btnReady.id, false, btnReady.id);
+        setRegions([btnRestart, btnReady]);
     }
     
     function drawEndInternetScreen() {
         if (imagesLoaded.greyscale === true) {
-            ctx.drawImage(imgGreyscale, 0, 0, baseWidth, baseHeight); // Draw to base coordinates
+            drawImageContain(imgGreyscale);
         } else if (imagesLoaded.greyscale === 'error') {
             drawText("Error loading Greyscale", baseWidth / 2, 300, 32, '#ff0000');
         } else {
             drawText("Loading Greyscale...", baseWidth / 2, 300, 32);
         }
-        const btn = { id: 'restart', text: 'RESTART', x: baseWidth / 2 - 200, y: 700, w: 400, h: 80 };
-        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
-        setRegions([btn]);
+        const btnRestart = { id: 'restart', text: 'restart', x: 150, y: 900, w: 500, h: 100 };
+        const btnReady = { id: 'ready', text: 'I am ready now', x: 150, y: 1020, w: 500, h: 100 };
+        drawButton(btnRestart.text, btnRestart.x, btnRestart.y, btnRestart.w, btnRestart.h, hoverTarget === btnRestart.id, false, btnRestart.id);
+        drawButton(btnReady.text, btnReady.x, btnReady.y, btnReady.w, btnReady.h, hoverTarget === btnReady.id, false, btnReady.id);
+        setRegions([btnRestart, btnReady]);
     }
 
     function drawEndLostScreen() {
         if (imagesLoaded.butter === true) {
-            ctx.drawImage(imgButter, 0, 0, baseWidth, baseHeight);
+            drawImageContain(imgButter);
         } else if (imagesLoaded.butter === 'error') {
             drawText("Error loading butter", baseWidth / 2, 300, 32, '#ff0000');
         } else {
             drawText("Loading butter...", baseWidth / 2, 300, 32);
         }
-        const btn = { id: 'restart', text: 'RESTART', x: baseWidth / 2 - 200, y: 700, w: 400, h: 80 };
-        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
-        setRegions([btn]);
+        const btnRestart = { id: 'restart', text: 'restart', x: 150, y: 900, w: 500, h: 100 };
+        const btnReady = { id: 'ready', text: 'I am ready now', x: 150, y: 1020, w: 500, h: 100 };
+        drawButton(btnRestart.text, btnRestart.x, btnRestart.y, btnRestart.w, btnRestart.h, hoverTarget === btnRestart.id, false, btnRestart.id);
+        drawButton(btnReady.text, btnReady.x, btnReady.y, btnReady.w, btnReady.h, hoverTarget === btnReady.id, false, btnReady.id);
+        setRegions([btnRestart, btnReady]);
     }
 
     function drawEndAlbanianScreen() {
         if (imagesLoaded.albanian === true) {
-            ctx.drawImage(imgAlbanian, 0, 0, baseWidth, baseHeight);
+            drawImageContain(imgAlbanian);
         } else if (imagesLoaded.albanian === 'error') {
             drawText("Error loading albanian", baseWidth / 2, 300, 32, '#ff0000');
         } else {
             drawText("Loading albanian...", baseWidth / 2, 300, 32);
         }
-        const btn = { id: 'restart', text: 'RESTART', x: baseWidth / 2 - 200, y: 700, w: 400, h: 80 };
-        drawButton(btn.text, btn.x, btn.y, btn.w, btn.h, hoverTarget === btn.id, false, btn.id);
-        setRegions([btn]);
+        const btnRestart = { id: 'restart', text: 'restart', x: 150, y: 900, w: 500, h: 100 };
+        const btnReady = { id: 'ready', text: 'I am ready now', x: 150, y: 1020, w: 500, h: 100 };
+        drawButton(btnRestart.text, btnRestart.x, btnRestart.y, btnRestart.w, btnRestart.h, hoverTarget === btnRestart.id, false, btnRestart.id);
+        drawButton(btnReady.text, btnReady.x, btnReady.y, btnReady.w, btnReady.h, hoverTarget === btnReady.id, false, btnReady.id);
+        setRegions([btnRestart, btnReady]);
     }
 
     // --- Core Logic ---
     function gameLoop() {
         if (!isGameActive) {
-            return; // Stop the loop if the game is not active
+            // Don't draw if in landscape
+            requestAnimationFrame(gameLoop); // Keep looping to check for orientation change
+            return;
         }
 
-        // Clear the *entire* physical canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Save context, apply scaling and offset
         ctx.save();
         ctx.translate(offsetX, offsetY);
         ctx.scale(scale, scale);
 
-        // --- Draw game elements inside the 1200x800 coordinate system ---
+        // --- Draw game elements inside the 800x1200 coordinate system ---
+        animationState.frame++;
         switch (gameState) {
             case GAME_STATES.START: drawStartScreen(); break;
             case GAME_STATES.Q1: drawQ1Screen(); break;
@@ -490,7 +491,6 @@
             case GAME_STATES.END_ALBANIAN: drawEndAlbanianScreen(); break;
         }
 
-        // Restore context to remove scaling
         ctx.restore();
         
         requestAnimationFrame(gameLoop);
@@ -498,7 +498,7 @@
     
     // --- Event Handlers (Updated for Scaling and Touch) ---
     function getTransformedCoords(event) {
-        event.preventDefault();
+        // Removed event.preventDefault() from here to fix touch bug
         const rect = canvas.getBoundingClientRect();
         let clientX, clientY;
 
@@ -513,15 +513,19 @@
         const mouseX_raw = clientX - rect.left;
         const mouseY_raw = clientY - rect.top;
 
-        // Reverse the scaling and offset
         const mouseX = (mouseX_raw - offsetX) / scale;
         const mouseY = (mouseY_raw - offsetY) / scale;
 
         return { mouseX, mouseY };
     }
 
-    function handleClick(event) {
+    function handleInteraction(event) {
         if (!isGameActive) return;
+
+        // Prevent default touch behaviors (like zoom) only when interacting
+        if (event.type === 'touchstart') {
+            event.preventDefault();
+        }
         
         const { mouseX, mouseY } = getTransformedCoords(event);
 
@@ -551,10 +555,14 @@
                     case GAME_STATES.END_INTERNET:
                     case GAME_STATES.END_LOST:
                     case GAME_STATES.END_ALBANIAN:
-                        if (region.id === 'restart') initializeGame();
+                        if (region.id === 'restart') {
+                            initializeGame();
+                        } else if (region.id === 'ready') {
+                            window.location.href = 'https://www.shopify.com/de';
+                        }
                         break;
                 }
-                return; // Exit after processing click
+                return;
             }
         }
     }
@@ -562,13 +570,13 @@
     function drawButton(text, x, y, w, h, isHovered, isDone, id = null) {
         ctx.strokeStyle = '#fff';
         if(isDone) ctx.fillStyle = '#00ff00';
-        else ctx.fillStyle = isHovered ? '#00ff00' : '#555'; /* Neon Green for hover */
+        else ctx.fillStyle = isHovered ? '#00ff00' : '#555';
         ctx.fillRect(x,y,w,h);
         ctx.strokeRect(x,y,w,h);
         
-        let fontSize = 24; // Larger base font for mobile buttons
-        if(text.length > 10) fontSize = 16;
-        if(text.length > 20) fontSize = 12;
+        let fontSize = 24; // Good default for large buttons
+        if(text.length > 10) fontSize = 20;
+        if(text.length > 15) fontSize = 16; // Adjust for "I am ready now"
 
         drawText(text, x + w/2, y + h/2 + 4, fontSize, isHovered || isDone ? '#000' : '#fff');
     }
@@ -579,19 +587,23 @@
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             
-            // Basic text wrapping for long titles
             const maxWidth = baseWidth - 100; // 50px padding
-            if(ctx.measureText(text).width > maxWidth) {
+            if(ctx.measureText(text).width > maxWidth && text.includes(' ')) {
                 const words = text.split(' ');
                 let line = '';
-                let testLine = '';
                 let yOffset = 0;
+                // Adjust starting Y for multi-line text to keep it centered
+                const linesNeeded = Math.ceil(ctx.measureText(text).width / (maxWidth / 1.5)); // Rough estimate
+                if (linesNeeded > 1) {
+                    yOffset -= (size * (linesNeeded - 1)) / 2;
+                }
+
                 for(let n = 0; n < words.length; n++) {
-                    testLine = line + words[n] + ' ';
-                    if (ctx.measureText(testLine).width > maxWidth) {
+                    let testLine = line + words[n] + ' ';
+                    if (ctx.measureText(testLine).width > maxWidth && n > 0) {
                         ctx.fillText(line, x, y + yOffset);
                         line = words[n] + ' ';
-                        yOffset += size + 4; // Move to next line
+                        yOffset += size + 4;
                     } else {
                         line = testLine;
                     }
@@ -606,7 +618,6 @@
         if (!isGameActive) return;
         
         const { mouseX, mouseY } = getTransformedCoords(event);
-
         const regions = clickRegions[gameState] || [];
         hoverTarget = null;
         canvas.style.cursor = 'default';
@@ -621,16 +632,17 @@
     }
 
     // --- Initial Setup ---
-    canvas.addEventListener('click', handleClick);
-    canvas.addEventListener('touchstart', handleClick, { passive: false }); // Use passive: false to allow preventDefault
+    canvas.addEventListener('click', handleInteraction);
+    canvas.addEventListener('touchstart', handleInteraction, { passive: false });
 
-    // Mobile doesn't really have "hover", but we'll leave mousemove for desktop/debug
+    // Mousemove for hover (desktop debugging)
     canvas.addEventListener('mousemove', handleMouseMove);
-    // canvas.addEventListener('touchmove', handleMouseMove, { passive: false }); // Can be noisy, enable if hover-like behavior is needed
 
-    window.addEventListener('resize', setupCanvas);
+    // Check orientation on resize
+    window.addEventListener('resize', setupCanvasAndOrientation);
 
-    setupCanvas(); // Initial setup
+    // Initial setup
+    setupCanvasAndOrientation(); 
     initializeGame();
     gameLoop();
 
@@ -638,3 +650,4 @@
 
 </body>
 </html>
+
