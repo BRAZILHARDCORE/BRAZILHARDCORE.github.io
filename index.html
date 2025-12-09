@@ -1,1239 +1,1278 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Activity, 
-  Database, 
-  Share2, 
-  Terminal, 
-  ShieldCheck, 
-  Zap, 
-  Dna, 
-  Microscope,
-  Settings,
-  Plus,
-  Play,
-  Save,
-  X,
-  Sliders,
-  Bot,
-  Network,
-  Copy,
-  ArrowRight,
-  AlertTriangle,
-  GitBranch,
-  CheckCircle2,
-  XCircle,
-  BookOpen,
-  Globe,
-  FileText,
-  Lock,
-  Power,
-  TrendingUp
-} from 'lucide-react';
-
-// --- VISUALIZATION ENGINE ---
-
-const YeastGenesis = () => {
-  // STATE: VIEW & MODALS
-  const [view, setView] = useState('simulation'); // simulation, library, agents
-  const [showCreator, setShowCreator] = useState(false);
-  const [showSuppInfo, setShowSuppInfo] = useState(false);
-  const [showMcpSelector, setShowMcpSelector] = useState(false);
-
-  // STATE: SIMULATION
-  const [activeModel, setActiveModel] = useState(null);
-  const [simulationState, setSimulationState] = useState('IDLE'); // IDLE, RUNNING
-  const [logs, setLogs] = useState([]);
-  const [particles, setParticles] = useState([]);
-  const [networkParticles, setNetworkParticles] = useState([]);
-  const [outputHistory, setOutputHistory] = useState({}); // Stores historical data for graphs
-  const logEndRef = useRef(null);
-
-  // STATE: INTERACTION
-  const [draggingNode, setDraggingNode] = useState(null);
-  const [connectingStart, setConnectingStart] = useState(null);
-  const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
-  const networkContainerRef = useRef(null);
-
-  // STATE: AGENTIC
-  const [agentProposal, setAgentProposal] = useState(null);
-
-  // STATE: MCP / EPISTEMIC
-  const [mcpActive, setMcpActive] = useState(true);
-  const [mcpSource, setMcpSource] = useState('EddaServer (Trusted)');
-  const [journalInput, setJournalInput] = useState('');
-  const [internetWarning, setInternetWarning] = useState(false);
-
-  // STATE: DATA MODELS (NODES)
-  const [library, setLibrary] = useState([
-    {
-      id: 'adler_model',
-      name: 'Adler Model',
-      type: 'Core Cycle',
-      citation: 'Adler et al., Yeast cell cycle model integrating stress',
-      inputs: [
-        { name: 'Glucose', value: 2.0, unit: '%', min: 0, max: 5 },
-        { name: 'Temperature', value: 30, unit: '°C', min: 20, max: 40 }
-      ],
-      outputs: [
-        { name: 'Cdc28 Activity', value: 45 },
-        { name: 'Budding Index', value: 12 }
-      ],
-      x: 30, y: 30,
-      suppData: {
-        equations: [
-          { label: 'v1 (Clb5 Synthesis)', formula: 'nutrition_factor * (k_pClb5 + MBF * (1 + k1 * I_Clb5Hog1 * Hog1pp))' },
-          { label: 'v2 (Clb5 Degradation)', formula: 'k_dClb5 * Clb5' },
-          { label: 'v10 (Cln2 Synthesis)', formula: 'nutrition_factor * (k_pCln2 + SBF * (1 + k1 * I_Cln2Hog1 * Hog1pp))' },
-          { label: 'v16 (Cln3 Synthesis)', formula: 'nutrition_factor * k_pCln3' },
-          { label: 'v28 (SBF Activation)', formula: 'SBF_Whi5 * (k_ppCln3_Whi5 * Cln3 + k_ppCln2_Whi5 * Cln2)' }
-        ],
-        parameters: [
-          { name: 'kpClb5', value: '1.87453', unit: 'particles * s-1' },
-          { name: 'KpClb5', value: '1.0', unit: 'particles' },
-          { name: 'kpCln2', value: '28.0496', unit: 'particles * s-1' },
-          { name: 'KpCln2', value: '22.025', unit: 'particles' },
-          { name: 'kpCln3', value: '0.01405', unit: 'particles * s-1' },
-          { name: 'kpMBF', value: '3.0', unit: 'particles * s-1' },
-          { name: 'kpSic1', value: '3.16963', unit: 'particles * s-1' }
-        ],
-        description: "A comprehensive yeast cell cycle model integrating stress, signaling and physiology. Simulates the influence of parameters on the mean cell cycle duration."
-      }
-    },
-    {
-      id: 'zirk_model',
-      name: 'Zirk Model',
-      type: 'Signaling',
-      citation: 'Zirk et al., Pheromone response dynamics',
-      inputs: [
-        { name: 'Alpha-Factor', value: 50, unit: 'nM', min: 0, max: 100 },
-        { name: 'Time', value: 0, unit: 'min', min: 0, max: 120 }
-      ],
-      outputs: [
-        { name: 'Shmoo Formation', value: 80 },
-        { name: 'G1 Arrest', value: 95 }
-      ],
-      x: 70, y: 30
-    },
-    {
-      id: 'emirhan_model',
-      name: 'Emirhan Model',
-      type: 'Survival',
-      citation: 'Emirhan et al., Heat shock survival protocols',
-      inputs: [
-         { name: 'Temperature', value: 37, unit: '°C', min: 20, max: 45 }
-      ],
-      outputs: [
-         { name: 'Hsp104 Levels', value: 10 }
-      ],
-      x: 50, y: 70
-    }
-  ]);
-
-  const [links, setLinks] = useState([
-     { source: 'adler_model', target: 'emirhan_model' }
-  ]);
-
-  const [newModel, setNewModel] = useState({
-    name: '',
-    type: 'Custom',
-    inputs: [{ name: '', unit: '', linkedSource: null }],
-    outputs: [{ name: '' }]
-  });
-
-  // --- LOGIC KERNEL ---
-
-  const addLog = (source, message, type = 'info') => {
-    const timestamp = new Date().toISOString().split('T')[1].slice(0, -1);
-    setLogs(prev => [...prev.slice(-8), { id: Date.now(), source, message, type, timestamp }]);
-  };
-
-  const toggleMcp = () => {
-    const newState = !mcpActive;
-    setMcpActive(newState);
-    if (newState) {
-      addLog('MCP', 'Connection Re-established. Pipe: OPEN', 'success');
-    } else {
-      addLog('MCP', 'Connection Severed. Pipe: CLOSED', 'warning');
-    }
-  };
-
-  const handleSetMcp = (source) => {
-    if (source === 'Internet') {
-      setInternetWarning(true);
-      return;
-    }
-    setInternetWarning(false);
-    if (source === 'Journal') {
-       // Logic handled in render
-    } else {
-       setMcpSource(source);
-       setShowMcpSelector(false);
-       addLog('MCP', `Source Protocol Switched: ${source}`, 'system');
-    }
-  };
-
-  const submitJournal = () => {
-    if (journalInput.includes('http') || journalInput.includes('doi')) {
-      setMcpSource(`Journal: ${journalInput.substring(0, 20)}...`);
-      setShowMcpSelector(false);
-      addLog('MCP', 'Journal Source Verified & Locked', 'success');
-      setJournalInput('');
-    } else {
-      addLog('MCP', 'Invalid DOI/Link format.', 'error');
-    }
-  };
-
-  // --- AGENTIC SIMULATION ---
-  useEffect(() => {
-    if (agentProposal) return;
-    const thoughtLoop = setInterval(() => {
-      if (Math.random() > 0.85 && library.length >= 2) {
-        const sourceIdx = Math.floor(Math.random() * library.length);
-        let targetIdx = Math.floor(Math.random() * library.length);
-        while (targetIdx === sourceIdx) targetIdx = Math.floor(Math.random() * library.length);
-        
-        const sourceNode = library[sourceIdx];
-        const targetNode = library[targetIdx];
-        const linkExists = links.some(l => l.source === sourceNode.id && l.target === targetNode.id);
-        
-        if (!linkExists) {
-          const strategies = [
-            `adopt stochastic modeling of mRNA from ${sourceNode.name}`,
-            `integrate metabolic flux data from ${sourceNode.name}`,
-            `bind receptor outputs from ${sourceNode.name}`,
-            `shunt excess thermal noise to ${sourceNode.name}`
-          ];
-          const reason = strategies[Math.floor(Math.random() * strategies.length)];
-
-          setAgentProposal({
-            source: sourceNode,
-            target: targetNode,
-            reason: reason,
-            risk: 'Creates complex feedback loop. May induce non-linear oscillation.'
-          });
-          
-          addLog('AGENT_ZERO', 'Optimization Heuristic Triggered...', 'warning');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yeast Genesis // Bio-Agentic Network</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'in': 'animate-in 0.3s ease-out',
+                        'out': 'animate-out 0.3s ease-in',
+                    },
+                    keyframes: {
+                        'animate-in': {
+                            '0%': { opacity: '0', transform: 'scale(0.95)' },
+                            '100%': { opacity: '1', transform: 'scale(1)' },
+                        }
+                    }
+                }
+            }
         }
-      }
-    }, 4000);
-    return () => clearInterval(thoughtLoop);
-  }, [library, links, agentProposal]);
+    </script>
 
-  const handleAcceptProposal = () => {
-    if (!agentProposal) return;
-    setLinks(prev => [...prev, { source: agentProposal.source.id, target: agentProposal.target.id }]);
-    addLog('AGENT_ZERO', `PROTOCOL ACCEPTED. Integrating ${agentProposal.source.name} -> ${agentProposal.target.name}`, 'success');
-    if (view !== 'agents') setView('agents');
-    setAgentProposal(null);
-  };
-
-  const handleRejectProposal = () => {
-    addLog('AGENT_ZERO', 'Proposal Rejected by Operator.', 'error');
-    setAgentProposal(null);
-  };
-
-  // --- STANDARD LOGIC ---
-
-  const mountModel = (model) => {
-    if (draggingNode) return;
-    setActiveModel(JSON.parse(JSON.stringify(model))); 
-    setOutputHistory({}); // Clear history on new mount
-    setSimulationState('IDLE');
-    setView('simulation');
-    addLog('SYSTEM', `Mounted Node: ${model.name}`, 'system');
-  };
-
-  const inheritTopology = (templateId) => {
-    const template = library.find(m => m.id === templateId);
-    if (!template) return;
-    setNewModel(prev => ({
-      ...prev,
-      type: template.type + ' (Fork)',
-      inputs: template.inputs.map(i => ({ name: i.name, unit: i.unit, linkedSource: null })), 
-      outputs: template.outputs.map(o => ({ name: o.name })) 
-    }));
-    addLog('CREATOR', `Topology Cloned from ${template.name}`, 'success');
-  };
-
-  const saveNewModel = () => {
-    if (!newModel.name) return;
-    const newX = 20 + Math.random() * 60;
-    const newY = 20 + Math.random() * 60;
-    const modelEntry = {
-      ...newModel,
-      id: `custom_${Date.now()}`,
-      inputs: newModel.inputs.filter(i => i.name).map(i => ({...i, value: 0, min: 0, max: 100})),
-      outputs: newModel.outputs.filter(o => o.name).map(o => ({...o, value: 0})),
-      x: newX, y: newY
-    };
-    setLibrary(prev => [...prev, modelEntry]);
-    if (newModel.type.includes('Fork')) {
-       const randomPeer = library[Math.floor(Math.random() * library.length)];
-       setLinks(prev => [...prev, { source: randomPeer.id, target: modelEntry.id }]);
-    }
-    setShowCreator(false);
-    addLog('NETWORK', `New Node Online: ${modelEntry.name}`, 'success');
-    setNewModel({ name: '', type: 'Custom', inputs: [{ name: '', unit: '' }], outputs: [{ name: '' }] });
-  };
-
-  const updateParameter = (index, newValue) => {
-    if (!activeModel) return;
-    const updated = { ...activeModel };
-    updated.inputs[index].value = parseFloat(newValue);
-    setActiveModel(updated);
-    if (simulationState === 'RUNNING') spawnParticle('environment', 'cell', 'input');
-  };
-
-  const toggleSimulation = () => {
-    if (simulationState === 'IDLE') {
-      if (!activeModel) { addLog('ERROR', 'No Node Mounted.', 'error'); return; }
-      setSimulationState('RUNNING');
-      addLog('SYSTEM', 'Processing Loop Active', 'success');
-    } else {
-      setSimulationState('IDLE');
-      addLog('SYSTEM', 'Loop Paused', 'neutral');
-    }
-  };
-
-  // --- DEDICATED SIMULATION LOOP (Fixes Plotting Issue) ---
-  useEffect(() => {
-    let interval;
-    if (simulationState === 'RUNNING' && activeModel) {
-      interval = setInterval(() => {
-        // 1. Calculate New Values
-        setActiveModel(prev => {
-          if (!prev) return null;
-          const next = { ...prev };
-          next.outputs = next.outputs.map(o => {
-             const currentVal = parseFloat(o.value);
-             const noise = (Math.random() - 0.5) * 15; // Increased noise for visibility
-             const drift = (50 - currentVal) * 0.05; 
-             let newVal = currentVal + noise + drift;
-             newVal = Math.max(0, Math.min(100, newVal));
-             return { ...o, value: newVal.toFixed(2) };
-          });
-          
-          // 2. Update History synchronously with model update
-          setOutputHistory(prevHist => {
-             const newHist = { ...prevHist };
-             next.outputs.forEach(o => {
-               if (!newHist[o.name]) newHist[o.name] = [];
-               newHist[o.name] = [...newHist[o.name], { time: Date.now(), value: parseFloat(o.value) }].slice(-40);
-             });
-             return newHist;
-          });
-
-          return next;
-        });
-
-        spawnParticle('cell', 'output', 'output');
-      }, 250); // Faster tick rate for smoother graphs
-    }
-    return () => clearInterval(interval);
-  }, [simulationState]); // removed activeModel dep to prevent reset, but using functional update handles state
-
-  const spawnParticle = (start, end, type) => {
-    const id = Date.now() + Math.random();
-    setParticles(prev => [...prev, { id, start, end, type, progress: 0 }]);
-  };
-
-  // --- INTERACTION ENGINE ---
-
-  const handleContainerMouseMove = (e) => {
-    if (!networkContainerRef.current) return;
-    const rect = networkContainerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    if (draggingNode) {
-      const xPercent = (x / rect.width) * 100;
-      const yPercent = (y / rect.height) * 100;
-      setLibrary(prev => prev.map(node => node.id === draggingNode ? { ...node, x: xPercent, y: yPercent } : node));
-    }
-    if (connectingStart) setCursorPos({ x, y });
-  };
-
-  const handleContainerMouseUp = () => {
-    setDraggingNode(null);
-    setConnectingStart(null);
-  };
-
-  const startConnection = (e, nodeId) => {
-    e.stopPropagation();
-    if (!networkContainerRef.current) return;
-    const rect = networkContainerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    setConnectingStart({ nodeId, x, y });
-    setCursorPos({ x, y });
-    addLog('NETWORK', 'Synaptic Patching Initiated...', 'neutral');
-  };
-
-  const completeConnection = (e, targetId) => {
-    e.stopPropagation();
-    if (connectingStart && connectingStart.nodeId !== targetId) {
-      const exists = links.some(l => l.source === connectingStart.nodeId && l.target === targetId);
-      if (!exists) {
-        setLinks(prev => [...prev, { source: connectingStart.nodeId, target: targetId }]);
-        addLog('NETWORK', `Link Established: ${connectingStart.nodeId} -> ${targetId}`, 'success');
-      } else {
-         addLog('NETWORK', `Link already exists.`, 'warning');
-      }
-    }
-    setConnectingStart(null);
-  };
-
-  // --- PHYSICS ENGINE ---
-
-  useEffect(() => {
-    if (logEndRef.current) logEndRef.current.scrollIntoView({ behavior: 'smooth' });
-  }, [logs]);
-
-  useEffect(() => {
-    let frame;
-    const animate = () => {
-      setParticles(prev => {
-        const active = prev.map(p => ({ ...p, progress: p.progress + 0.015 }));
-        return active.filter(p => p.progress <= 1);
-      });
-      frame = requestAnimationFrame(animate);
-    };
-    frame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frame);
-  }, []);
-
-  useEffect(() => {
-    if (view !== 'agents') return;
-    const interval = setInterval(() => {
-      if (links.length === 0) return;
-      const link = links[Math.floor(Math.random() * links.length)];
-      const id = Date.now() + Math.random();
-      setNetworkParticles(prev => [...prev, { id, link, progress: 0 }]);
-    }, 800);
-    return () => clearInterval(interval);
-  }, [view, links]);
-
-  useEffect(() => {
-    if (view !== 'agents') return;
-    let frame;
-    const animateNetwork = () => {
-      setNetworkParticles(prev => {
-        const active = prev.map(p => ({ ...p, progress: p.progress + 0.01 }));
-        return active.filter(p => p.progress <= 1);
-      });
-      frame = requestAnimationFrame(animateNetwork);
-    };
-    frame = requestAnimationFrame(animateNetwork);
-    return () => cancelAnimationFrame(frame);
-  }, [view]);
-
-
-  // --- RENDERERS ---
-
-  return (
-    <div className="flex flex-col h-screen bg-slate-950 text-slate-200 font-sans selection:bg-rose-500 selection:text-slate-950 overflow-hidden"
-         onMouseUp={handleContainerMouseUp} 
-    >
-      
-      {/* HEADER */}
-      <div className="h-16 border-b border-slate-800 bg-slate-900/50 backdrop-blur-md flex items-center justify-between px-6 z-20">
-        <div className="flex items-center gap-3">
-          <Dna className="text-rose-500 w-6 h-6" />
-          <div>
-            <h1 className="text-lg font-bold tracking-widest text-slate-100 leading-none">
-              YEAST <span className="text-rose-400">GENESIS</span>
-            </h1>
-            <div className="text-[10px] font-mono text-slate-500 tracking-wide">
-              BIO-AGENTIC NETWORK v3.5
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-4">
-          <NavButton 
-            active={view === 'simulation'} 
-            onClick={() => setView('simulation')} 
-            icon={Microscope} 
-            label="SIMULATION" 
-          />
-          <NavButton 
-            active={view === 'library'} 
-            onClick={() => setView('library')} 
-            icon={Database} 
-            label="LIBRARY" 
-          />
-          <NavButton 
-            active={view === 'agents'} 
-            onClick={() => setView('agents')} 
-            icon={Network} 
-            label="AGENT NETWORK" 
-            alert={!!agentProposal}
-          />
-          <button 
-            onClick={() => setShowCreator(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wide bg-rose-600 text-white shadow-lg shadow-rose-900/50 hover:bg-rose-500 transition-all"
-          >
-            <Plus className="w-3 h-3" />
-            CREATE NODE
-          </button>
-        </div>
-      </div>
-
-      {/* MAIN VIEWPORT */}
-      <div className="flex-1 relative flex">
+    <style>
+        /* Custom scrollbar to match the aesthetic */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155; 
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569; 
+        }
         
-        {/* LEFT: CONTROLS & LOGS */}
-        <div className="w-96 border-r border-slate-800 bg-slate-900/30 flex flex-col z-10 transition-all">
-          
-          {/* PARAMETER CONTROL PANEL */}
-          <div className="p-4 border-b border-slate-800 bg-slate-900/50">
-             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                  <Settings className="w-3 h-3" />
-                  Node Parameters
-                </h2>
-                {activeModel && (
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
-                    {activeModel.type}
-                  </span>
-                )}
-             </div>
+        /* Utility for the graph gradients */
+        .vector-effect-non-scaling-stroke {
+            vector-effect: non-scaling-stroke;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 overflow-hidden">
+    <div id="root"></div>
 
-             {!activeModel ? (
-               <div className="text-center py-8 text-slate-600 text-xs italic border border-dashed border-slate-800 rounded">
-                 Select a node from Library or Network to configure.
-               </div>
-             ) : (
-               <div className="space-y-4">
-                 {activeModel.inputs.map((input, idx) => (
-                   <div key={idx} className="space-y-1">
-                     <div className="flex justify-between text-[10px] font-mono text-slate-400">
-                       <span>{input.name}</span>
-                       <span className="text-rose-400">{input.value} {input.unit}</span>
-                     </div>
-                     <input 
-                       type="range" 
-                       min={input.min} 
-                       max={input.max} 
-                       step="0.1"
-                       value={input.value}
-                       onChange={(e) => updateParameter(idx, e.target.value)}
-                       className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-500"
-                     />
-                   </div>
-                 ))}
-                 <button 
-                    onClick={toggleSimulation}
-                    className={`w-full py-2 rounded flex items-center justify-center gap-2 text-xs font-bold transition-all ${
-                      simulationState === 'RUNNING' 
-                        ? 'bg-amber-500/10 text-amber-500 border border-amber-500/50 hover:bg-amber-500/20'
-                        : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/50 hover:bg-emerald-500/20'
-                    }`}
-                 >
-                    {simulationState === 'RUNNING' ? <Zap className="w-3 h-3 animate-pulse" /> : <Play className="w-3 h-3" />}
-                    {simulationState === 'RUNNING' ? 'PAUSE NODE' : 'RUN NODE'}
-                 </button>
-               </div>
-             )}
-          </div>
-          
-          {/* LIVE LOGS */}
-          <div className="flex-1 flex flex-col min-h-0 bg-black/40">
-            <div className="p-2 border-b border-slate-800 bg-slate-900/80 text-[10px] font-mono text-slate-400 flex justify-between">
-              <span>HIVE MIND LOG</span>
-              <span className={`animate-pulse ${simulationState === 'RUNNING' ? 'text-emerald-500' : 'text-slate-600'}`}>
-                {simulationState === 'RUNNING' ? '● SYNCED' : '○ STANDBY'}
-              </span>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 font-mono text-xs space-y-2">
-              {logs.length === 0 && <div className="text-slate-600 italic">Network initialized. Awaiting handshake...</div>}
-              {logs.map((log) => (
-                <div key={log.id} className="flex gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
-                  <span className="text-slate-600 select-none">[{log.timestamp}]</span>
-                  <div className="flex-1">
-                    <span className={`font-bold mr-2 ${
-                      log.source === 'SYSTEM' ? 'text-rose-400' : 
-                      log.source === 'NETWORK' ? 'text-blue-400' : 
-                      log.source === 'AGENT_ZERO' ? 'text-amber-400' : 
-                      log.source === 'MCP' ? 'text-emerald-400' :
-                      'text-slate-400'
-                    }`}>{log.source}:</span>
-                    <span className={`${
-                      log.type === 'error' ? 'text-red-400' : 
-                      log.type === 'success' ? 'text-emerald-300' : 
-                      log.type === 'warning' ? 'text-amber-400' : 
-                      log.type === 'system' ? 'text-slate-500 italic' :
-                      'text-slate-300'
-                    }`}>{log.message}</span>
+    <script type="module">
+        // Import Dependencies from ESM.sh (Production Grade CDN)
+        import React, { useState, useEffect, useRef } from 'https://esm.sh/react@18.2.0';
+        import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+        
+        // Import all Icons used
+        import { 
+          Activity, Database, Share2, Terminal, ShieldCheck, Zap, Dna, Microscope,
+          Settings, Plus, Play, Save, X, Sliders, Bot, Network, Copy, ArrowRight,
+          AlertTriangle, GitBranch, CheckCircle2, XCircle, BookOpen, Globe, 
+          FileText, Lock, Power, TrendingUp 
+        } from 'https://esm.sh/lucide-react@0.263.1';
+
+        // --- VISUALIZATION ENGINE ---
+
+        const YeastGenesis = () => {
+          // STATE: VIEW & MODALS
+          const [view, setView] = useState('simulation'); // simulation, library, agents
+          const [showCreator, setShowCreator] = useState(false);
+          const [showSuppInfo, setShowSuppInfo] = useState(false);
+          const [showMcpSelector, setShowMcpSelector] = useState(false);
+
+          // STATE: SIMULATION
+          const [activeModel, setActiveModel] = useState(null);
+          const [simulationState, setSimulationState] = useState('IDLE'); // IDLE, RUNNING
+          const [logs, setLogs] = useState([]);
+          const [particles, setParticles] = useState([]);
+          const [networkParticles, setNetworkParticles] = useState([]);
+          const [outputHistory, setOutputHistory] = useState({}); // Stores historical data for graphs
+          const logEndRef = useRef(null);
+
+          // STATE: INTERACTION
+          const [draggingNode, setDraggingNode] = useState(null);
+          const [connectingStart, setConnectingStart] = useState(null);
+          const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
+          const networkContainerRef = useRef(null);
+
+          // STATE: AGENTIC
+          const [agentProposal, setAgentProposal] = useState(null);
+
+          // STATE: MCP / EPISTEMIC
+          const [mcpActive, setMcpActive] = useState(true);
+          const [mcpSource, setMcpSource] = useState('EddaServer (Trusted)');
+          const [journalInput, setJournalInput] = useState('');
+          const [internetWarning, setInternetWarning] = useState(false);
+
+          // STATE: DATA MODELS (NODES)
+          const [library, setLibrary] = useState([
+            {
+              id: 'adler_model',
+              name: 'Adler Model',
+              type: 'Core Cycle',
+              citation: 'Adler et al., Yeast cell cycle model integrating stress',
+              inputs: [
+                { name: 'Glucose', value: 2.0, unit: '%', min: 0, max: 5 },
+                { name: 'Temperature', value: 30, unit: '°C', min: 20, max: 40 }
+              ],
+              outputs: [
+                { name: 'Cdc28 Activity', value: 45 },
+                { name: 'Budding Index', value: 12 }
+              ],
+              x: 30, y: 30,
+              suppData: {
+                equations: [
+                  { label: 'v1 (Clb5 Synthesis)', formula: 'nutrition_factor * (k_pClb5 + MBF * (1 + k1 * I_Clb5Hog1 * Hog1pp))' },
+                  { label: 'v2 (Clb5 Degradation)', formula: 'k_dClb5 * Clb5' },
+                  { label: 'v10 (Cln2 Synthesis)', formula: 'nutrition_factor * (k_pCln2 + SBF * (1 + k1 * I_Cln2Hog1 * Hog1pp))' },
+                  { label: 'v16 (Cln3 Synthesis)', formula: 'nutrition_factor * k_pCln3' },
+                  { label: 'v28 (SBF Activation)', formula: 'SBF_Whi5 * (k_ppCln3_Whi5 * Cln3 + k_ppCln2_Whi5 * Cln2)' }
+                ],
+                parameters: [
+                  { name: 'kpClb5', value: '1.87453', unit: 'particles * s-1' },
+                  { name: 'KpClb5', value: '1.0', unit: 'particles' },
+                  { name: 'kpCln2', value: '28.0496', unit: 'particles * s-1' },
+                  { name: 'KpCln2', value: '22.025', unit: 'particles' },
+                  { name: 'kpCln3', value: '0.01405', unit: 'particles * s-1' },
+                  { name: 'kpMBF', value: '3.0', unit: 'particles * s-1' },
+                  { name: 'kpSic1', value: '3.16963', unit: 'particles * s-1' }
+                ],
+                description: "A comprehensive yeast cell cycle model integrating stress, signaling and physiology. Simulates the influence of parameters on the mean cell cycle duration."
+              }
+            },
+            {
+              id: 'zirk_model',
+              name: 'Zirk Model',
+              type: 'Signaling',
+              citation: 'Zirk et al., Pheromone response dynamics',
+              inputs: [
+                { name: 'Alpha-Factor', value: 50, unit: 'nM', min: 0, max: 100 },
+                { name: 'Time', value: 0, unit: 'min', min: 0, max: 120 }
+              ],
+              outputs: [
+                { name: 'Shmoo Formation', value: 80 },
+                { name: 'G1 Arrest', value: 95 }
+              ],
+              x: 70, y: 30
+            },
+            {
+              id: 'emirhan_model',
+              name: 'Emirhan Model',
+              type: 'Survival',
+              citation: 'Emirhan et al., Heat shock survival protocols',
+              inputs: [
+                  { name: 'Temperature', value: 37, unit: '°C', min: 20, max: 45 }
+              ],
+              outputs: [
+                  { name: 'Hsp104 Levels', value: 10 }
+              ],
+              x: 50, y: 70
+            }
+          ]);
+
+          const [links, setLinks] = useState([
+              { source: 'adler_model', target: 'emirhan_model' }
+          ]);
+
+          const [newModel, setNewModel] = useState({
+            name: '',
+            type: 'Custom',
+            inputs: [{ name: '', unit: '', linkedSource: null }],
+            outputs: [{ name: '' }]
+          });
+
+          // --- LOGIC KERNEL ---
+
+          const addLog = (source, message, type = 'info') => {
+            const timestamp = new Date().toISOString().split('T')[1].slice(0, -1);
+            setLogs(prev => [...prev.slice(-8), { id: Date.now(), source, message, type, timestamp }]);
+          };
+
+          const toggleMcp = () => {
+            const newState = !mcpActive;
+            setMcpActive(newState);
+            if (newState) {
+              addLog('MCP', 'Connection Re-established. Pipe: OPEN', 'success');
+            } else {
+              addLog('MCP', 'Connection Severed. Pipe: CLOSED', 'warning');
+            }
+          };
+
+          const handleSetMcp = (source) => {
+            if (source === 'Internet') {
+              setInternetWarning(true);
+              return;
+            }
+            setInternetWarning(false);
+            if (source === 'Journal') {
+               // Logic handled in render
+            } else {
+               setMcpSource(source);
+               setShowMcpSelector(false);
+               addLog('MCP', `Source Protocol Switched: ${source}`, 'system');
+            }
+          };
+
+          const submitJournal = () => {
+            if (journalInput.includes('http') || journalInput.includes('doi')) {
+              setMcpSource(`Journal: ${journalInput.substring(0, 20)}...`);
+              setShowMcpSelector(false);
+              addLog('MCP', 'Journal Source Verified & Locked', 'success');
+              setJournalInput('');
+            } else {
+              addLog('MCP', 'Invalid DOI/Link format.', 'error');
+            }
+          };
+
+          // --- AGENTIC SIMULATION ---
+          useEffect(() => {
+            if (agentProposal) return;
+            const thoughtLoop = setInterval(() => {
+              if (Math.random() > 0.85 && library.length >= 2) {
+                const sourceIdx = Math.floor(Math.random() * library.length);
+                let targetIdx = Math.floor(Math.random() * library.length);
+                while (targetIdx === sourceIdx) targetIdx = Math.floor(Math.random() * library.length);
+                
+                const sourceNode = library[sourceIdx];
+                const targetNode = library[targetIdx];
+                const linkExists = links.some(l => l.source === sourceNode.id && l.target === targetNode.id);
+                
+                if (!linkExists) {
+                  const strategies = [
+                    `adopt stochastic modeling of mRNA from ${sourceNode.name}`,
+                    `integrate metabolic flux data from ${sourceNode.name}`,
+                    `bind receptor outputs from ${sourceNode.name}`,
+                    `shunt excess thermal noise to ${sourceNode.name}`
+                  ];
+                  const reason = strategies[Math.floor(Math.random() * strategies.length)];
+
+                  setAgentProposal({
+                    source: sourceNode,
+                    target: targetNode,
+                    reason: reason,
+                    risk: 'Creates complex feedback loop. May induce non-linear oscillation.'
+                  });
+                  
+                  addLog('AGENT_ZERO', 'Optimization Heuristic Triggered...', 'warning');
+                }
+              }
+            }, 4000);
+            return () => clearInterval(thoughtLoop);
+          }, [library, links, agentProposal]);
+
+          const handleAcceptProposal = () => {
+            if (!agentProposal) return;
+            setLinks(prev => [...prev, { source: agentProposal.source.id, target: agentProposal.target.id }]);
+            addLog('AGENT_ZERO', `PROTOCOL ACCEPTED. Integrating ${agentProposal.source.name} -> ${agentProposal.target.name}`, 'success');
+            if (view !== 'agents') setView('agents');
+            setAgentProposal(null);
+          };
+
+          const handleRejectProposal = () => {
+            addLog('AGENT_ZERO', 'Proposal Rejected by Operator.', 'error');
+            setAgentProposal(null);
+          };
+
+          // --- STANDARD LOGIC ---
+
+          const mountModel = (model) => {
+            if (draggingNode) return;
+            setActiveModel(JSON.parse(JSON.stringify(model))); 
+            setOutputHistory({}); // Clear history on new mount
+            setSimulationState('IDLE');
+            setView('simulation');
+            addLog('SYSTEM', `Mounted Node: ${model.name}`, 'system');
+          };
+
+          const inheritTopology = (templateId) => {
+            const template = library.find(m => m.id === templateId);
+            if (!template) return;
+            setNewModel(prev => ({
+              ...prev,
+              type: template.type + ' (Fork)',
+              inputs: template.inputs.map(i => ({ name: i.name, unit: i.unit, linkedSource: null })), 
+              outputs: template.outputs.map(o => ({ name: o.name })) 
+            }));
+            addLog('CREATOR', `Topology Cloned from ${template.name}`, 'success');
+          };
+
+          const saveNewModel = () => {
+            if (!newModel.name) return;
+            const newX = 20 + Math.random() * 60;
+            const newY = 20 + Math.random() * 60;
+            const modelEntry = {
+              ...newModel,
+              id: `custom_${Date.now()}`,
+              inputs: newModel.inputs.filter(i => i.name).map(i => ({...i, value: 0, min: 0, max: 100})),
+              outputs: newModel.outputs.filter(o => o.name).map(o => ({...o, value: 0})),
+              x: newX, y: newY
+            };
+            setLibrary(prev => [...prev, modelEntry]);
+            if (newModel.type.includes('Fork')) {
+               const randomPeer = library[Math.floor(Math.random() * library.length)];
+               setLinks(prev => [...prev, { source: randomPeer.id, target: modelEntry.id }]);
+            }
+            setShowCreator(false);
+            addLog('NETWORK', `New Node Online: ${modelEntry.name}`, 'success');
+            setNewModel({ name: '', type: 'Custom', inputs: [{ name: '', unit: '' }], outputs: [{ name: '' }] });
+          };
+
+          const updateParameter = (index, newValue) => {
+            if (!activeModel) return;
+            const updated = { ...activeModel };
+            updated.inputs[index].value = parseFloat(newValue);
+            setActiveModel(updated);
+            if (simulationState === 'RUNNING') spawnParticle('environment', 'cell', 'input');
+          };
+
+          const toggleSimulation = () => {
+            if (simulationState === 'IDLE') {
+              if (!activeModel) { addLog('ERROR', 'No Node Mounted.', 'error'); return; }
+              setSimulationState('RUNNING');
+              addLog('SYSTEM', 'Processing Loop Active', 'success');
+            } else {
+              setSimulationState('IDLE');
+              addLog('SYSTEM', 'Loop Paused', 'neutral');
+            }
+          };
+
+          // --- DEDICATED SIMULATION LOOP ---
+          useEffect(() => {
+            let interval;
+            if (simulationState === 'RUNNING' && activeModel) {
+              interval = setInterval(() => {
+                // 1. Calculate New Values
+                setActiveModel(prev => {
+                  if (!prev) return null;
+                  const next = { ...prev };
+                  next.outputs = next.outputs.map(o => {
+                      const currentVal = parseFloat(o.value);
+                      const noise = (Math.random() - 0.5) * 15; 
+                      const drift = (50 - currentVal) * 0.05; 
+                      let newVal = currentVal + noise + drift;
+                      newVal = Math.max(0, Math.min(100, newVal));
+                      return { ...o, value: newVal.toFixed(2) };
+                  });
+                  
+                  // 2. Update History
+                  setOutputHistory(prevHist => {
+                      const newHist = { ...prevHist };
+                      next.outputs.forEach(o => {
+                        if (!newHist[o.name]) newHist[o.name] = [];
+                        newHist[o.name] = [...newHist[o.name], { time: Date.now(), value: parseFloat(o.value) }].slice(-40);
+                      });
+                      return newHist;
+                  });
+
+                  return next;
+                });
+
+                spawnParticle('cell', 'output', 'output');
+              }, 250);
+            }
+            return () => clearInterval(interval);
+          }, [simulationState]); 
+
+          const spawnParticle = (start, end, type) => {
+            const id = Date.now() + Math.random();
+            setParticles(prev => [...prev, { id, start, end, type, progress: 0 }]);
+          };
+
+          // --- INTERACTION ENGINE ---
+
+          const handleContainerMouseMove = (e) => {
+            if (!networkContainerRef.current) return;
+            const rect = networkContainerRef.current.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            if (draggingNode) {
+              const xPercent = (x / rect.width) * 100;
+              const yPercent = (y / rect.height) * 100;
+              setLibrary(prev => prev.map(node => node.id === draggingNode ? { ...node, x: xPercent, y: yPercent } : node));
+            }
+            if (connectingStart) setCursorPos({ x, y });
+          };
+
+          const handleContainerMouseUp = () => {
+            setDraggingNode(null);
+            setConnectingStart(null);
+          };
+
+          const startConnection = (e, nodeId) => {
+            e.stopPropagation();
+            if (!networkContainerRef.current) return;
+            const rect = networkContainerRef.current.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            setConnectingStart({ nodeId, x, y });
+            setCursorPos({ x, y });
+            addLog('NETWORK', 'Synaptic Patching Initiated...', 'neutral');
+          };
+
+          const completeConnection = (e, targetId) => {
+            e.stopPropagation();
+            if (connectingStart && connectingStart.nodeId !== targetId) {
+              const exists = links.some(l => l.source === connectingStart.nodeId && l.target === targetId);
+              if (!exists) {
+                setLinks(prev => [...prev, { source: connectingStart.nodeId, target: targetId }]);
+                addLog('NETWORK', `Link Established: ${connectingStart.nodeId} -> ${targetId}`, 'success');
+              } else {
+                 addLog('NETWORK', `Link already exists.`, 'warning');
+              }
+            }
+            setConnectingStart(null);
+          };
+
+          // --- PHYSICS ENGINE ---
+
+          useEffect(() => {
+            if (logEndRef.current) logEndRef.current.scrollIntoView({ behavior: 'smooth' });
+          }, [logs]);
+
+          useEffect(() => {
+            let frame;
+            const animate = () => {
+              setParticles(prev => {
+                const active = prev.map(p => ({ ...p, progress: p.progress + 0.015 }));
+                return active.filter(p => p.progress <= 1);
+              });
+              frame = requestAnimationFrame(animate);
+            };
+            frame = requestAnimationFrame(animate);
+            return () => cancelAnimationFrame(frame);
+          }, []);
+
+          useEffect(() => {
+            if (view !== 'agents') return;
+            const interval = setInterval(() => {
+              if (links.length === 0) return;
+              const link = links[Math.floor(Math.random() * links.length)];
+              const id = Date.now() + Math.random();
+              setNetworkParticles(prev => [...prev, { id, link, progress: 0 }]);
+            }, 800);
+            return () => clearInterval(interval);
+          }, [view, links]);
+
+          useEffect(() => {
+            if (view !== 'agents') return;
+            let frame;
+            const animateNetwork = () => {
+              setNetworkParticles(prev => {
+                const active = prev.map(p => ({ ...p, progress: p.progress + 0.01 }));
+                return active.filter(p => p.progress <= 1);
+              });
+              frame = requestAnimationFrame(animateNetwork);
+            };
+            frame = requestAnimationFrame(animateNetwork);
+            return () => cancelAnimationFrame(frame);
+          }, [view]);
+
+
+          // --- RENDERERS ---
+
+          return (
+            <div className="flex flex-col h-screen bg-slate-950 text-slate-200 font-sans selection:bg-rose-500 selection:text-slate-950 overflow-hidden"
+                 onMouseUp={handleContainerMouseUp} 
+            >
+              
+              {/* HEADER */}
+              <div className="h-16 border-b border-slate-800 bg-slate-900/50 backdrop-blur-md flex items-center justify-between px-6 z-20">
+                <div className="flex items-center gap-3">
+                  <Dna className="text-rose-500 w-6 h-6" />
+                  <div>
+                    <h1 className="text-lg font-bold tracking-widest text-slate-100 leading-none">
+                      YEAST <span className="text-rose-400">GENESIS</span>
+                    </h1>
+                    <div className="text-[10px] font-mono text-slate-500 tracking-wide">
+                      BIO-AGENTIC NETWORK v3.5
+                    </div>
                   </div>
                 </div>
-              ))}
-              <div ref={logEndRef} />
-            </div>
-          </div>
-        </div>
+                <div className="flex gap-4">
+                  <NavButton 
+                    active={view === 'simulation'} 
+                    onClick={() => setView('simulation')} 
+                    icon={Microscope} 
+                    label="SIMULATION" 
+                  />
+                  <NavButton 
+                    active={view === 'library'} 
+                    onClick={() => setView('library')} 
+                    icon={Database} 
+                    label="LIBRARY" 
+                  />
+                  <NavButton 
+                    active={view === 'agents'} 
+                    onClick={() => setView('agents')} 
+                    icon={Network} 
+                    label="AGENT NETWORK" 
+                    alert={!!agentProposal}
+                  />
+                  <button 
+                    onClick={() => setShowCreator(true)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wide bg-rose-600 text-white shadow-lg shadow-rose-900/50 hover:bg-rose-500 transition-all"
+                  >
+                    <Plus className="w-3 h-3" />
+                    CREATE NODE
+                  </button>
+                </div>
+              </div>
 
-        {/* RIGHT: VIEWPORT SWITCHER */}
-        <div className="flex-1 relative bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black overflow-hidden">
-          
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(30,41,59,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(30,41,59,0.1)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_100%)] pointer-events-none" />
-
-          {/* VIEW: LIBRARY */}
-          {view === 'library' && (
-            <div className="absolute inset-0 p-8 overflow-y-auto animate-in fade-in zoom-in-95 duration-300">
-              <h2 className="text-xl font-bold text-slate-200 mb-6">System Library</h2>
-              <div className="grid grid-cols-2 gap-4">
-                {library.map((model) => (
-                  <div key={model.id} className="p-4 rounded-xl border border-slate-800 bg-slate-900/50 hover:border-rose-500/50 hover:bg-slate-900 transition-all group">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <h3 className="font-bold text-slate-200">{model.name}</h3>
-                        <span className="text-xs text-rose-500 font-mono">{model.type}</span>
+              {/* MAIN VIEWPORT */}
+              <div className="flex-1 relative flex">
+                
+                {/* LEFT: CONTROLS & LOGS */}
+                <div className="w-96 border-r border-slate-800 bg-slate-900/30 flex flex-col z-10 transition-all">
+                  
+                  {/* PARAMETER CONTROL PANEL */}
+                  <div className="p-4 border-b border-slate-800 bg-slate-900/50">
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                          <Settings className="w-3 h-3" />
+                          Node Parameters
+                        </h2>
+                        {activeModel && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
+                            {activeModel.type}
+                          </span>
+                        )}
                       </div>
-                      <button 
-                        onClick={() => mountModel(model)}
-                        className="opacity-0 group-hover:opacity-100 px-3 py-1 bg-rose-600 text-white text-xs font-bold rounded transition-all"
-                      >
-                        INSPECT
-                      </button>
+
+                      {!activeModel ? (
+                        <div className="text-center py-8 text-slate-600 text-xs italic border border-dashed border-slate-800 rounded">
+                          Select a node from Library or Network to configure.
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {activeModel.inputs.map((input, idx) => (
+                            <div key={idx} className="space-y-1">
+                              <div className="flex justify-between text-[10px] font-mono text-slate-400">
+                                <span>{input.name}</span>
+                                <span className="text-rose-400">{input.value} {input.unit}</span>
+                              </div>
+                              <input 
+                                type="range" 
+                                min={input.min} 
+                                max={input.max} 
+                                step="0.1"
+                                value={input.value}
+                                onChange={(e) => updateParameter(idx, e.target.value)}
+                                className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-500"
+                              />
+                            </div>
+                          ))}
+                          <button 
+                             onClick={toggleSimulation}
+                             className={`w-full py-2 rounded flex items-center justify-center gap-2 text-xs font-bold transition-all ${
+                               simulationState === 'RUNNING' 
+                                 ? 'bg-amber-500/10 text-amber-500 border border-amber-500/50 hover:bg-amber-500/20'
+                                 : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/50 hover:bg-emerald-500/20'
+                             }`}
+                          >
+                             {simulationState === 'RUNNING' ? <Zap className="w-3 h-3 animate-pulse" /> : <Play className="w-3 h-3" />}
+                             {simulationState === 'RUNNING' ? 'PAUSE NODE' : 'RUN NODE'}
+                          </button>
+                        </div>
+                      )}
+                  </div>
+                  
+                  {/* LIVE LOGS */}
+                  <div className="flex-1 flex flex-col min-h-0 bg-black/40">
+                    <div className="p-2 border-b border-slate-800 bg-slate-900/80 text-[10px] font-mono text-slate-400 flex justify-between">
+                      <span>HIVE MIND LOG</span>
+                      <span className={`animate-pulse ${simulationState === 'RUNNING' ? 'text-emerald-500' : 'text-slate-600'}`}>
+                        {simulationState === 'RUNNING' ? '● SYNCED' : '○ STANDBY'}
+                      </span>
                     </div>
-                    {model.citation && (
-                      <div className="text-[9px] text-slate-500 italic mb-3 border-l-2 border-slate-700 pl-2">
-                        Ref: {model.citation}
-                      </div>
-                    )}
-                    <div className="grid grid-cols-2 gap-4 mt-4">
-                      <div>
-                        <div className="text-[9px] text-slate-500 uppercase font-bold mb-1">Inputs</div>
-                        <div className="flex flex-wrap gap-1">
-                          {model.inputs.map((i, idx) => (
-                            <span key={idx} className="text-[10px] px-1.5 py-0.5 bg-slate-800 rounded text-slate-300 border border-slate-700">
-                              {i.name}
-                            </span>
-                          ))}
+                    <div className="flex-1 overflow-y-auto p-4 font-mono text-xs space-y-2">
+                      {logs.length === 0 && <div className="text-slate-600 italic">Network initialized. Awaiting handshake...</div>}
+                      {logs.map((log) => (
+                        <div key={log.id} className="flex gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
+                          <span className="text-slate-600 select-none">[{log.timestamp}]</span>
+                          <div className="flex-1">
+                            <span className={`font-bold mr-2 ${
+                              log.source === 'SYSTEM' ? 'text-rose-400' : 
+                              log.source === 'NETWORK' ? 'text-blue-400' : 
+                              log.source === 'AGENT_ZERO' ? 'text-amber-400' : 
+                              log.source === 'MCP' ? 'text-emerald-400' :
+                              'text-slate-400'
+                            }`}>{log.source}:</span>
+                            <span className={`${
+                              log.type === 'error' ? 'text-red-400' : 
+                              log.type === 'success' ? 'text-emerald-300' : 
+                              log.type === 'warning' ? 'text-amber-400' : 
+                              log.type === 'system' ? 'text-slate-500 italic' :
+                              'text-slate-300'
+                            }`}>{log.message}</span>
+                          </div>
                         </div>
-                      </div>
-                      <div>
-                        <div className="text-[9px] text-slate-500 uppercase font-bold mb-1">Outputs</div>
-                        <div className="flex flex-wrap gap-1">
-                          {model.outputs.map((o, idx) => (
-                            <span key={idx} className="text-[10px] px-1.5 py-0.5 bg-slate-800 rounded text-slate-300 border border-slate-700">
-                              {o.name}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
+                      ))}
+                      <div ref={logEndRef} />
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+                </div>
 
-          {/* VIEW: AGENTS */}
-          {view === 'agents' && (
-             <div 
-               className="absolute inset-0 overflow-hidden animate-in fade-in zoom-in-95 duration-500"
-               ref={networkContainerRef}
-               onMouseMove={handleContainerMouseMove}
-             >
-               <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
-                  {links.map((link, idx) => {
-                     const source = library.find(m => m.id === link.source);
-                     const target = library.find(m => m.id === link.target);
-                     if (!source || !target) return null;
-                     return (
-                       <line 
-                         key={idx}
-                         x1={`${source.x}%`} y1={`${source.y}%`}
-                         x2={`${target.x}%`} y2={`${target.y}%`}
-                         stroke="#334155"
-                         strokeWidth="2"
-                         strokeDasharray="4"
-                       />
-                     );
-                  })}
-                  {connectingStart && networkContainerRef.current && (
-                    <line 
-                      x1={`${(connectingStart.x / networkContainerRef.current.getBoundingClientRect().width) * 100}%`} 
-                      y1={`${(connectingStart.y / networkContainerRef.current.getBoundingClientRect().height) * 100}%`} 
-                      x2={`${(cursorPos.x / networkContainerRef.current.getBoundingClientRect().width) * 100}%`}
-                      y2={`${(cursorPos.y / networkContainerRef.current.getBoundingClientRect().height) * 100}%`}
-                      stroke="#10b981"
-                      strokeWidth="2"
-                      strokeDasharray="4"
-                      className="animate-pulse"
-                    />
+                {/* RIGHT: VIEWPORT SWITCHER */}
+                <div className="flex-1 relative bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black overflow-hidden">
+                  
+                  <div className="absolute inset-0 bg-[linear-gradient(rgba(30,41,59,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(30,41,59,0.1)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_100%)] pointer-events-none" />
+
+                  {/* VIEW: LIBRARY */}
+                  {view === 'library' && (
+                    <div className="absolute inset-0 p-8 overflow-y-auto animate-in fade-in zoom-in-95 duration-300">
+                      <h2 className="text-xl font-bold text-slate-200 mb-6">System Library</h2>
+                      <div className="grid grid-cols-2 gap-4">
+                        {library.map((model) => (
+                          <div key={model.id} className="p-4 rounded-xl border border-slate-800 bg-slate-900/50 hover:border-rose-500/50 hover:bg-slate-900 transition-all group">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <h3 className="font-bold text-slate-200">{model.name}</h3>
+                                <span className="text-xs text-rose-500 font-mono">{model.type}</span>
+                              </div>
+                              <button 
+                                onClick={() => mountModel(model)}
+                                className="opacity-0 group-hover:opacity-100 px-3 py-1 bg-rose-600 text-white text-xs font-bold rounded transition-all"
+                              >
+                                INSPECT
+                              </button>
+                            </div>
+                            {model.citation && (
+                              <div className="text-[9px] text-slate-500 italic mb-3 border-l-2 border-slate-700 pl-2">
+                                Ref: {model.citation}
+                              </div>
+                            )}
+                            <div className="grid grid-cols-2 gap-4 mt-4">
+                              <div>
+                                <div className="text-[9px] text-slate-500 uppercase font-bold mb-1">Inputs</div>
+                                <div className="flex flex-wrap gap-1">
+                                  {model.inputs.map((i, idx) => (
+                                    <span key={idx} className="text-[10px] px-1.5 py-0.5 bg-slate-800 rounded text-slate-300 border border-slate-700">
+                                      {i.name}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-[9px] text-slate-500 uppercase font-bold mb-1">Outputs</div>
+                                <div className="flex flex-wrap gap-1">
+                                  {model.outputs.map((o, idx) => (
+                                    <span key={idx} className="text-[10px] px-1.5 py-0.5 bg-slate-800 rounded text-slate-300 border border-slate-700">
+                                      {o.name}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                  {networkParticles.map(p => {
-                     const source = library.find(m => m.id === p.link.source);
-                     const target = library.find(m => m.id === p.link.target);
-                     if (!source || !target) return null;
-                     const x = source.x + (target.x - source.x) * p.progress;
-                     const y = source.y + (target.y - source.y) * p.progress;
-                     return (
-                       <circle key={p.id} cx={`${x}%`} cy={`${y}%`} r="3" fill="#60a5fa" className="animate-pulse" />
-                     );
-                  })}
-               </svg>
 
-               {library.map((model) => (
-                 <div 
-                   key={model.id}
-                   className={`absolute w-32 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group ${
-                     draggingNode === model.id ? 'cursor-grabbing z-50 scale-105' : 'cursor-grab z-10'
-                   }`}
-                   style={{ left: `${model.x}%`, top: `${model.y}%` }}
-                   onMouseDown={(e) => {
-                     if (e.target.dataset.port) return; 
-                     setDraggingNode(model.id);
-                   }}
-                 >
-                    <div 
-                      className="w-16 h-16 rounded-2xl bg-slate-900 border-2 border-slate-700 flex items-center justify-center shadow-2xl transition-all duration-300 group-hover:border-rose-500 group-hover:shadow-[0_0_30px_rgba(244,63,94,0.3)] relative"
-                      onDoubleClick={() => mountModel(model)}
-                    >
-                       <Bot className="w-8 h-8 text-slate-500 group-hover:text-rose-400 transition-colors pointer-events-none" />
-                       <div 
-                         className="absolute -left-2 w-4 h-4 bg-slate-800 border border-slate-600 hover:bg-amber-500 hover:border-amber-400 rounded-full cursor-crosshair transition-colors"
-                         data-port="input"
-                         onMouseUp={(e) => completeConnection(e, model.id)}
-                         title="Input Port"
-                       />
-                       <div 
-                         className="absolute -right-2 w-4 h-4 bg-slate-800 border border-slate-600 hover:bg-emerald-500 hover:border-emerald-400 rounded-full cursor-crosshair transition-colors"
-                         data-port="output"
-                         onMouseDown={(e) => startConnection(e, model.id)}
-                         title="Output Port"
-                       />
+                  {/* VIEW: AGENTS */}
+                  {view === 'agents' && (
+                      <div 
+                        className="absolute inset-0 overflow-hidden animate-in fade-in zoom-in-95 duration-500"
+                        ref={networkContainerRef}
+                        onMouseMove={handleContainerMouseMove}
+                      >
+                        <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
+                          {links.map((link, idx) => {
+                              const source = library.find(m => m.id === link.source);
+                              const target = library.find(m => m.id === link.target);
+                              if (!source || !target) return null;
+                              return (
+                                <line 
+                                  key={idx}
+                                  x1={`${source.x}%`} y1={`${source.y}%`}
+                                  x2={`${target.x}%`} y2={`${target.y}%`}
+                                  stroke="#334155"
+                                  strokeWidth="2"
+                                  strokeDasharray="4"
+                                />
+                              );
+                          })}
+                          {connectingStart && networkContainerRef.current && (
+                            <line 
+                              x1={`${(connectingStart.x / networkContainerRef.current.getBoundingClientRect().width) * 100}%`} 
+                              y1={`${(connectingStart.y / networkContainerRef.current.getBoundingClientRect().height) * 100}%`} 
+                              x2={`${(cursorPos.x / networkContainerRef.current.getBoundingClientRect().width) * 100}%`}
+                              y2={`${(cursorPos.y / networkContainerRef.current.getBoundingClientRect().height) * 100}%`}
+                              stroke="#10b981"
+                              strokeWidth="2"
+                              strokeDasharray="4"
+                              className="animate-pulse"
+                            />
+                          )}
+                          {networkParticles.map(p => {
+                              const source = library.find(m => m.id === p.link.source);
+                              const target = library.find(m => m.id === p.link.target);
+                              if (!source || !target) return null;
+                              const x = source.x + (target.x - source.x) * p.progress;
+                              const y = source.y + (target.y - source.y) * p.progress;
+                              return (
+                                <circle key={p.id} cx={`${x}%`} cy={`${y}%`} r="3" fill="#60a5fa" className="animate-pulse" />
+                              );
+                          })}
+                        </svg>
+
+                        {library.map((model) => (
+                          <div 
+                            key={model.id}
+                            className={`absolute w-32 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group ${
+                              draggingNode === model.id ? 'cursor-grabbing z-50 scale-105' : 'cursor-grab z-10'
+                            }`}
+                            style={{ left: `${model.x}%`, top: `${model.y}%` }}
+                            onMouseDown={(e) => {
+                              if (e.target.dataset.port) return; 
+                              setDraggingNode(model.id);
+                            }}
+                          >
+                             <div 
+                               className="w-16 h-16 rounded-2xl bg-slate-900 border-2 border-slate-700 flex items-center justify-center shadow-2xl transition-all duration-300 group-hover:border-rose-500 group-hover:shadow-[0_0_30px_rgba(244,63,94,0.3)] relative"
+                               onDoubleClick={() => mountModel(model)}
+                             >
+                                <Bot className="w-8 h-8 text-slate-500 group-hover:text-rose-400 transition-colors pointer-events-none" />
+                                <div 
+                                  className="absolute -left-2 w-4 h-4 bg-slate-800 border border-slate-600 hover:bg-amber-500 hover:border-amber-400 rounded-full cursor-crosshair transition-colors"
+                                  data-port="input"
+                                  onMouseUp={(e) => completeConnection(e, model.id)}
+                                  title="Input Port"
+                                />
+                                <div 
+                                  className="absolute -right-2 w-4 h-4 bg-slate-800 border border-slate-600 hover:bg-emerald-500 hover:border-emerald-400 rounded-full cursor-crosshair transition-colors"
+                                  data-port="output"
+                                  onMouseDown={(e) => startConnection(e, model.id)}
+                                  title="Output Port"
+                                />
+                             </div>
+                             
+                             <div className="mt-2 text-center bg-slate-950/80 px-3 py-1 rounded-full border border-slate-800 backdrop-blur-sm pointer-events-none select-none">
+                               <div className="text-[10px] font-bold text-slate-200 whitespace-nowrap">{model.name}</div>
+                               <div className="text-[8px] text-slate-500 font-mono">{model.type}</div>
+                             </div>
+                          </div>
+                        ))}
+                      </div>
+                  )}
+
+                  {/* VIEW: SIMULATION */}
+                  {view === 'simulation' && (
+                    <>
+                      {/* TOP RIGHT TOOLBAR */}
+                      {activeModel && (
+                        <div className="absolute top-6 right-6 z-40 flex gap-2">
+                           {activeModel.suppData && (
+                             <button 
+                               onClick={() => setShowSuppInfo(true)}
+                               className="p-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-400 hover:text-white hover:border-rose-500 transition-all shadow-lg"
+                               title="Supplementary Information"
+                             >
+                               <BookOpen className="w-5 h-5" />
+                             </button>
+                           )}
+                        </div>
+                      )}
+
+                      <svg className="absolute inset-0 w-full h-full pointer-events-none z-20 overflow-visible">
+                        {particles.map(p => {
+                          const start = p.start === 'environment' ? {x: '10%', y: '50%'} : {x: '50%', y: '50%'};
+                          const end = p.end === 'cell' ? {x: '50%', y: '50%'} : {x: '90%', y: '50%'};
+                          return <Particle key={p.id} start={start} end={end} progress={p.progress} type={p.type} />;
+                        })}
+                      </svg>
+
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center">
+                         <div className={`relative w-64 h-64 rounded-full border-2 flex items-center justify-center transition-all duration-700 ${
+                           simulationState === 'RUNNING' 
+                             ? 'border-rose-500 bg-rose-950/20 shadow-[0_0_80px_rgba(244,63,94,0.2)]' 
+                             : 'border-slate-700 bg-slate-900/50'
+                         }`}>
+                           <div className={`w-32 h-32 rounded-full bg-black/50 border border-slate-600 flex items-center justify-center ${simulationState === 'RUNNING' ? 'animate-pulse' : ''}`}>
+                              <Dna className={`w-16 h-16 ${simulationState === 'RUNNING' ? 'text-rose-400' : 'text-slate-700'}`} />
+                           </div>
+                           {activeModel && (
+                             <>
+                               <div className="absolute left-0 -translate-x-1/2 w-8 h-8 rounded-full bg-slate-900 border border-slate-500 flex items-center justify-center">
+                                 <Sliders className="w-4 h-4 text-slate-400" />
+                               </div>
+                               <div className="absolute left-0 -translate-x-full text-[10px] font-mono text-slate-500 -ml-2">INPUTS</div>
+                               <div className="absolute right-0 translate-x-1/2 w-8 h-8 rounded-full bg-slate-900 border border-slate-500 flex items-center justify-center">
+                                 <Activity className="w-4 h-4 text-slate-400" />
+                               </div>
+                               <div className="absolute right-0 translate-x-full text-[10px] font-mono text-slate-500 -mr-2 text-right">OUTPUTS</div>
+                             </>
+                           )}
+                         </div>
+                         <div className="mt-8 text-center flex flex-col items-center">
+                           <div className="text-sm font-bold text-slate-200 tracking-widest">{activeModel ? activeModel.name.toUpperCase() : 'NO MODEL LOADED'}</div>
+                           <div className="text-[10px] text-slate-500 font-mono mt-1">S. CEREVISIAE KERNEL</div>
+                           
+                           <div className="flex items-center justify-center gap-2 mt-2">
+                              <button
+                                  onClick={toggleMcp}
+                                  className={`text-[9px] font-mono border px-2 py-0.5 rounded flex items-center gap-1 transition-all ${
+                                      mcpActive 
+                                      ? 'text-emerald-500 border-emerald-500/50 bg-emerald-900/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' 
+                                      : 'text-slate-500 border-slate-700 bg-slate-900 hover:border-slate-500'
+                                  }`}
+                              >
+                                  <div className={`w-1.5 h-1.5 rounded-full ${mcpActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-600'}`} />
+                                  MCP: {mcpActive ? 'ONLINE' : 'OFFLINE'}
+                              </button>
+                              {mcpActive && (
+                                  <span className="text-[9px] text-emerald-500/50 font-mono animate-in fade-in">
+                                      VIA {mcpSource.split(' ')[0]}
+                                  </span>
+                              )}
+                           </div>
+                         </div>
+                      </div>
+
+                      {activeModel && simulationState === 'RUNNING' && (
+                        <div className="absolute right-8 top-1/2 -translate-y-1/2 w-56 space-y-6">
+                          {activeModel.outputs.map((out, i) => (
+                            <div key={i} className="animate-in slide-in-from-right duration-500" style={{animationDelay: `${i*100}ms`}}>
+                               <div className="flex justify-between text-[10px] text-slate-400 uppercase font-bold mb-1 items-center">
+                                 <span>{out.name}</span>
+                                 <span className="text-emerald-400 font-mono">{out.value}</span>
+                               </div>
+                               
+                               {/* SVG GRAPH */}
+                               <div className="h-12 bg-slate-900/80 border border-slate-800 rounded overflow-hidden relative">
+                                 {outputHistory[out.name] && outputHistory[out.name].length > 1 && (
+                                   <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+                                     <defs>
+                                       <linearGradient id={`grad-${i}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                                         <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
+                                         <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                                       </linearGradient>
+                                     </defs>
+                                     <path 
+                                       d={`
+                                         M 0,${100 - outputHistory[out.name][0].value} 
+                                         ${outputHistory[out.name].map((pt, idx) => `L ${(idx / (outputHistory[out.name].length - 1)) * 100}%,${100 - pt.value}`).join(' ')}
+                                         L 100%,100 L 0,100 Z
+                                       `}
+                                       fill={`url(#grad-${i})`}
+                                     />
+                                     <path 
+                                       d={`
+                                         M 0,${100 - outputHistory[out.name][0].value} 
+                                         ${outputHistory[out.name].map((pt, idx) => `L ${(idx / (outputHistory[out.name].length - 1)) * 100}%,${100 - pt.value}`).join(' ')}
+                                       `}
+                                       fill="none"
+                                       stroke="#10b981"
+                                       strokeWidth="1.5"
+                                       className="vector-effect-non-scaling-stroke"
+                                     />
+                                   </svg>
+                                 )}
+                                 {/* Grid Lines */}
+                                 <div className="absolute inset-0 border-b border-slate-800/30 top-1/2" />
+                                 <div className="absolute inset-0 border-l border-slate-800/30 left-1/4" />
+                                 <div className="absolute inset-0 border-l border-slate-800/30 left-1/2" />
+                                 <div className="absolute inset-0 border-l border-slate-800/30 left-3/4" />
+                               </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                </div>
+              </div>
+
+              {/* MODAL: SUPPLEMENTARY INFO & MCP */}
+              {showSuppInfo && activeModel && activeModel.suppData && (
+                <div className="absolute inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200">
+                   <div className="w-full max-w-4xl bg-slate-900 border border-slate-700 rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
+                     
+                     {/* Header */}
+                     <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/50">
+                       <div className="flex items-center gap-3">
+                         <div className="p-2 bg-slate-800 rounded-lg">
+                            <BookOpen className="w-5 h-5 text-rose-500" />
+                         </div>
+                         <div>
+                           <h3 className="font-bold text-slate-100">Supplementary Information</h3>
+                           <div className="text-xs text-slate-500 italic font-mono">{activeModel.citation}</div>
+                         </div>
+                       </div>
+                       <div className="flex items-center gap-4">
+                         {mcpActive ? (
+                           <button 
+                             onClick={() => setShowMcpSelector(true)}
+                             className="px-3 py-1.5 rounded bg-emerald-900/30 border border-emerald-800 text-emerald-400 text-xs font-bold hover:bg-emerald-900/50 transition-all flex items-center gap-2"
+                           >
+                             <ShieldCheck className="w-3 h-3" />
+                             MCP: {mcpSource.split(' ')[0]}
+                           </button>
+                         ) : (
+                           <div className="px-3 py-1.5 rounded bg-slate-800 border border-slate-700 text-slate-500 text-xs font-bold flex items-center gap-2 cursor-not-allowed">
+                             <Power className="w-3 h-3" />
+                             MCP OFFLINE
+                           </div>
+                         )}
+                         <button onClick={() => setShowSuppInfo(false)} className="text-slate-500 hover:text-white">
+                           <X className="w-6 h-6" />
+                         </button>
+                       </div>
+                     </div>
+
+                     {/* Content */}
+                     <div className="flex-1 overflow-y-auto p-6 flex gap-6">
+                       
+                       {/* Left: Equations */}
+                       <div className="flex-1 space-y-6">
+                         <div>
+                           <h4 className="text-xs font-bold text-rose-400 uppercase tracking-widest mb-4 border-b border-rose-900/30 pb-2">
+                             Table S1: Rate Equations (Selected)
+                           </h4>
+                           <div className="space-y-3">
+                             {activeModel.suppData.equations.map((eq, i) => (
+                               <div key={i} className="bg-slate-950 p-3 rounded border border-slate-800">
+                                 <div className="text-[10px] text-slate-500 font-mono mb-1">{eq.label}</div>
+                                 <div className="text-xs font-mono text-emerald-400 break-all">{eq.formula}</div>
+                               </div>
+                             ))}
+                           </div>
+                         </div>
+                         <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+                           <h4 className="text-xs font-bold text-slate-300 mb-2">Abstract</h4>
+                           <p className="text-xs text-slate-400 leading-relaxed">
+                             {activeModel.suppData.description}
+                           </p>
+                         </div>
+                       </div>
+
+                       {/* Right: Parameters */}
+                       <div className="w-80 shrink-0 bg-slate-950 border border-slate-800 rounded-lg flex flex-col">
+                          <div className="p-3 border-b border-slate-800 bg-slate-900/50">
+                            <h4 className="text-xs font-bold text-slate-400 uppercase">Table S2: Parameters</h4>
+                          </div>
+                          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                            {activeModel.suppData.parameters.map((param, i) => (
+                              <div key={i} className="flex justify-between items-center p-2 hover:bg-slate-900 rounded text-xs">
+                                <span className="font-mono text-slate-300">{param.name}</span>
+                                <div className="text-right">
+                                  <div className="text-rose-400">{param.value}</div>
+                                  <div className="text-[9px] text-slate-600">{param.unit}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                       </div>
+                     </div>
+                   </div>
+                </div>
+              )}
+
+              {/* MODAL: MCP SELECTOR */}
+              {showMcpSelector && (
+                <div className="absolute inset-0 z-[70] bg-black/90 backdrop-blur flex items-center justify-center p-4">
+                   <div className="w-full max-w-md bg-slate-900 border border-slate-600 rounded-xl shadow-2xl p-6">
+                     <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                       <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                       Select Epistemic Source
+                     </h3>
+                     
+                     {!internetWarning ? (
+                       <div className="space-y-3">
+                         <button 
+                           onClick={() => handleSetMcp('EddaServer (Trusted)')}
+                           className="w-full p-4 rounded-lg border border-slate-700 bg-slate-800/50 hover:bg-slate-800 hover:border-emerald-500 transition-all text-left flex items-center gap-4 group"
+                         >
+                           <div className="p-2 bg-emerald-900/30 rounded text-emerald-500 group-hover:text-emerald-400">
+                             <Lock className="w-5 h-5" />
+                           </div>
+                           <div>
+                             <div className="text-sm font-bold text-white">EddaServer</div>
+                             <div className="text-xs text-slate-500">Verified Peer-Reviewed Repository</div>
+                           </div>
+                         </button>
+
+                         <button 
+                           onClick={() => handleSetMcp('Internet')}
+                           className="w-full p-4 rounded-lg border border-slate-700 bg-slate-800/50 hover:bg-slate-800 hover:border-amber-500 transition-all text-left flex items-center gap-4 group"
+                         >
+                           <div className="p-2 bg-amber-900/30 rounded text-amber-500 group-hover:text-amber-400">
+                             <Globe className="w-5 h-5" />
+                           </div>
+                           <div>
+                             <div className="text-sm font-bold text-white">Open Internet</div>
+                             <div className="text-xs text-slate-500">Public Domain Scraper (Unverified)</div>
+                           </div>
+                         </button>
+
+                         <div className="w-full p-4 rounded-lg border border-slate-700 bg-slate-800/50 text-left space-y-3">
+                           <div className="flex items-center gap-4">
+                             <div className="p-2 bg-purple-900/30 rounded text-purple-500">
+                               <FileText className="w-5 h-5" />
+                             </div>
+                             <div>
+                               <div className="text-sm font-bold text-white">Specific Journal</div>
+                               <div className="text-xs text-slate-500">Direct DOI/Link Injection</div>
+                             </div>
+                           </div>
+                           <div className="flex gap-2">
+                             <input 
+                               type="text" 
+                               value={journalInput}
+                               onChange={(e) => setJournalInput(e.target.value)}
+                               placeholder="Paste DOI or Link..."
+                               className="flex-1 bg-slate-950 border border-slate-700 rounded px-3 py-1 text-xs text-white outline-none focus:border-purple-500"
+                             />
+                             <button 
+                               onClick={submitJournal}
+                               className="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded"
+                             >
+                               LINK
+                             </button>
+                           </div>
+                         </div>
+                       </div>
+                     ) : (
+                       <div className="space-y-6 text-center animate-in fade-in zoom-in-95">
+                         <div className="w-16 h-16 mx-auto bg-red-900/30 rounded-full flex items-center justify-center border-2 border-red-500 animate-pulse">
+                           <AlertTriangle className="w-8 h-8 text-red-500" />
+                         </div>
+                         <div>
+                           <h4 className="text-xl font-bold text-red-500 mb-2">EPISTEMIC HAZARD DETECTED</h4>
+                           <p className="text-sm text-slate-300 leading-relaxed">
+                             Not everything published on the internet has a strong enough truth value. Open web data often lacks the metabolic rigor required for biophysical simulation.
+                           </p>
+                         </div>
+                         <div className="flex gap-3">
+                            <button 
+                              onClick={() => setInternetWarning(false)}
+                              className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 rounded text-xs font-bold text-slate-300"
+                            >
+                              ABORT
+                            </button>
+                            <button 
+                              onClick={() => handleSetMcp('Internet (Unsafe)')}
+                              className="flex-1 py-3 bg-red-900/50 hover:bg-red-900/80 border border-red-500/50 rounded text-xs font-bold text-red-300"
+                            >
+                              PROCEED ANYWAY
+                            </button>
+                         </div>
+                       </div>
+                     )}
+
+                     {!internetWarning && (
+                       <button 
+                         onClick={() => setShowMcpSelector(false)}
+                         className="mt-6 w-full py-2 text-xs text-slate-500 hover:text-white"
+                       >
+                         CANCEL
+                       </button>
+                     )}
+                   </div>
+                </div>
+              )}
+
+              {/* CREATOR MODAL */}
+              {showCreator && (
+                <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                  <div className="w-full max-w-lg bg-slate-900 border border-slate-700 rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
+                    <div className="p-4 border-b border-slate-800 flex justify-between items-center">
+                      <h3 className="font-bold text-slate-100 flex items-center gap-2">
+                        <Plus className="w-4 h-4 text-rose-500" />
+                        Define Agentic Node
+                      </h3>
+                      <button onClick={() => setShowCreator(false)} className="text-slate-500 hover:text-white">
+                        <X className="w-5 h-5" />
+                      </button>
                     </div>
                     
-                    <div className="mt-2 text-center bg-slate-950/80 px-3 py-1 rounded-full border border-slate-800 backdrop-blur-sm pointer-events-none select-none">
-                      <div className="text-[10px] font-bold text-slate-200 whitespace-nowrap">{model.name}</div>
-                      <div className="text-[8px] text-slate-500 font-mono">{model.type}</div>
-                    </div>
-                 </div>
-               ))}
-             </div>
-          )}
-
-          {/* VIEW: SIMULATION */}
-          {view === 'simulation' && (
-            <>
-              {/* TOP RIGHT TOOLBAR */}
-              {activeModel && (
-                <div className="absolute top-6 right-6 z-40 flex gap-2">
-                   {activeModel.suppData && (
-                     <button 
-                       onClick={() => setShowSuppInfo(true)}
-                       className="p-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-400 hover:text-white hover:border-rose-500 transition-all shadow-lg"
-                       title="Supplementary Information"
-                     >
-                       <BookOpen className="w-5 h-5" />
-                     </button>
-                   )}
-                </div>
-              )}
-
-              <svg className="absolute inset-0 w-full h-full pointer-events-none z-20 overflow-visible">
-                {particles.map(p => {
-                  const start = p.start === 'environment' ? {x: '10%', y: '50%'} : {x: '50%', y: '50%'};
-                  const end = p.end === 'cell' ? {x: '50%', y: '50%'} : {x: '90%', y: '50%'};
-                  return <Particle key={p.id} start={start} end={end} progress={p.progress} type={p.type} />;
-                })}
-              </svg>
-
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center">
-                 <div className={`relative w-64 h-64 rounded-full border-2 flex items-center justify-center transition-all duration-700 ${
-                   simulationState === 'RUNNING' 
-                     ? 'border-rose-500 bg-rose-950/20 shadow-[0_0_80px_rgba(244,63,94,0.2)]' 
-                     : 'border-slate-700 bg-slate-900/50'
-                 }`}>
-                   <div className={`w-32 h-32 rounded-full bg-black/50 border border-slate-600 flex items-center justify-center ${simulationState === 'RUNNING' ? 'animate-pulse' : ''}`}>
-                      <Dna className={`w-16 h-16 ${simulationState === 'RUNNING' ? 'text-rose-400' : 'text-slate-700'}`} />
-                   </div>
-                   {activeModel && (
-                     <>
-                       <div className="absolute left-0 -translate-x-1/2 w-8 h-8 rounded-full bg-slate-900 border border-slate-500 flex items-center justify-center">
-                         <Sliders className="w-4 h-4 text-slate-400" />
-                       </div>
-                       <div className="absolute left-0 -translate-x-full text-[10px] font-mono text-slate-500 -ml-2">INPUTS</div>
-                       <div className="absolute right-0 translate-x-1/2 w-8 h-8 rounded-full bg-slate-900 border border-slate-500 flex items-center justify-center">
-                         <Activity className="w-4 h-4 text-slate-400" />
-                       </div>
-                       <div className="absolute right-0 translate-x-full text-[10px] font-mono text-slate-500 -mr-2 text-right">OUTPUTS</div>
-                     </>
-                   )}
-                 </div>
-                 <div className="mt-8 text-center flex flex-col items-center">
-                   <div className="text-sm font-bold text-slate-200 tracking-widest">{activeModel ? activeModel.name.toUpperCase() : 'NO MODEL LOADED'}</div>
-                   <div className="text-[10px] text-slate-500 font-mono mt-1">S. CEREVISIAE KERNEL</div>
-                   
-                   <div className="flex items-center justify-center gap-2 mt-2">
-                      <button
-                          onClick={toggleMcp}
-                          className={`text-[9px] font-mono border px-2 py-0.5 rounded flex items-center gap-1 transition-all ${
-                              mcpActive 
-                              ? 'text-emerald-500 border-emerald-500/50 bg-emerald-900/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' 
-                              : 'text-slate-500 border-slate-700 bg-slate-900 hover:border-slate-500'
-                          }`}
-                      >
-                          <div className={`w-1.5 h-1.5 rounded-full ${mcpActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-600'}`} />
-                          MCP: {mcpActive ? 'ONLINE' : 'OFFLINE'}
-                      </button>
-                      {mcpActive && (
-                          <span className="text-[9px] text-emerald-500/50 font-mono animate-in fade-in">
-                              VIA {mcpSource.split(' ')[0]}
-                          </span>
-                      )}
-                   </div>
-                 </div>
-              </div>
-
-              {activeModel && simulationState === 'RUNNING' && (
-                <div className="absolute right-8 top-1/2 -translate-y-1/2 w-56 space-y-6">
-                  {activeModel.outputs.map((out, i) => (
-                    <div key={i} className="animate-in slide-in-from-right duration-500" style={{animationDelay: `${i*100}ms`}}>
-                       <div className="flex justify-between text-[10px] text-slate-400 uppercase font-bold mb-1 items-center">
-                         <span>{out.name}</span>
-                         <span className="text-emerald-400 font-mono">{out.value}</span>
-                       </div>
-                       
-                       {/* SVG GRAPH */}
-                       <div className="h-12 bg-slate-900/80 border border-slate-800 rounded overflow-hidden relative">
-                         {outputHistory[out.name] && outputHistory[out.name].length > 1 && (
-                           <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
-                             <defs>
-                               <linearGradient id={`grad-${i}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                                 <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
-                                 <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
-                               </linearGradient>
-                             </defs>
-                             <path 
-                               d={`
-                                 M 0,${100 - outputHistory[out.name][0].value} 
-                                 ${outputHistory[out.name].map((pt, idx) => `L ${(idx / (outputHistory[out.name].length - 1)) * 100}%,${100 - pt.value}`).join(' ')}
-                                 L 100%,100 L 0,100 Z
-                               `}
-                               fill={`url(#grad-${i})`}
-                             />
-                             <path 
-                               d={`
-                                 M 0,${100 - outputHistory[out.name][0].value} 
-                                 ${outputHistory[out.name].map((pt, idx) => `L ${(idx / (outputHistory[out.name].length - 1)) * 100}%,${100 - pt.value}`).join(' ')}
-                               `}
-                               fill="none"
-                               stroke="#10b981"
-                               strokeWidth="1.5"
-                               vectorEffect="non-scaling-stroke"
-                             />
-                           </svg>
-                         )}
-                         {/* Grid Lines */}
-                         <div className="absolute inset-0 border-b border-slate-800/30 top-1/2" />
-                         <div className="absolute inset-0 border-l border-slate-800/30 left-1/4" />
-                         <div className="absolute inset-0 border-l border-slate-800/30 left-1/2" />
-                         <div className="absolute inset-0 border-l border-slate-800/30 left-3/4" />
-                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-
-        </div>
-      </div>
-
-      {/* MODAL: SUPPLEMENTARY INFO & MCP */}
-      {showSuppInfo && activeModel && activeModel.suppData && (
-        <div className="absolute inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200">
-           <div className="w-full max-w-4xl bg-slate-900 border border-slate-700 rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
-             
-             {/* Header */}
-             <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/50">
-               <div className="flex items-center gap-3">
-                 <div className="p-2 bg-slate-800 rounded-lg">
-                    <BookOpen className="w-5 h-5 text-rose-500" />
-                 </div>
-                 <div>
-                   <h3 className="font-bold text-slate-100">Supplementary Information</h3>
-                   <div className="text-xs text-slate-500 italic font-mono">{activeModel.citation}</div>
-                 </div>
-               </div>
-               <div className="flex items-center gap-4">
-                 {mcpActive ? (
-                   <button 
-                     onClick={() => setShowMcpSelector(true)}
-                     className="px-3 py-1.5 rounded bg-emerald-900/30 border border-emerald-800 text-emerald-400 text-xs font-bold hover:bg-emerald-900/50 transition-all flex items-center gap-2"
-                   >
-                     <ShieldCheck className="w-3 h-3" />
-                     MCP: {mcpSource.split(' ')[0]}
-                   </button>
-                 ) : (
-                   <div className="px-3 py-1.5 rounded bg-slate-800 border border-slate-700 text-slate-500 text-xs font-bold flex items-center gap-2 cursor-not-allowed">
-                     <Power className="w-3 h-3" />
-                     MCP OFFLINE
-                   </div>
-                 )}
-                 <button onClick={() => setShowSuppInfo(false)} className="text-slate-500 hover:text-white">
-                   <X className="w-6 h-6" />
-                 </button>
-               </div>
-             </div>
-
-             {/* Content */}
-             <div className="flex-1 overflow-y-auto p-6 flex gap-6">
-               
-               {/* Left: Equations */}
-               <div className="flex-1 space-y-6">
-                 <div>
-                   <h4 className="text-xs font-bold text-rose-400 uppercase tracking-widest mb-4 border-b border-rose-900/30 pb-2">
-                     Table S1: Rate Equations (Selected)
-                   </h4>
-                   <div className="space-y-3">
-                     {activeModel.suppData.equations.map((eq, i) => (
-                       <div key={i} className="bg-slate-950 p-3 rounded border border-slate-800">
-                         <div className="text-[10px] text-slate-500 font-mono mb-1">{eq.label}</div>
-                         <div className="text-xs font-mono text-emerald-400 break-all">{eq.formula}</div>
-                       </div>
-                     ))}
-                   </div>
-                 </div>
-                 <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
-                   <h4 className="text-xs font-bold text-slate-300 mb-2">Abstract</h4>
-                   <p className="text-xs text-slate-400 leading-relaxed">
-                     {activeModel.suppData.description}
-                   </p>
-                 </div>
-               </div>
-
-               {/* Right: Parameters */}
-               <div className="w-80 shrink-0 bg-slate-950 border border-slate-800 rounded-lg flex flex-col">
-                  <div className="p-3 border-b border-slate-800 bg-slate-900/50">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase">Table S2: Parameters</h4>
-                  </div>
-                  <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                    {activeModel.suppData.parameters.map((param, i) => (
-                      <div key={i} className="flex justify-between items-center p-2 hover:bg-slate-900 rounded text-xs">
-                        <span className="font-mono text-slate-300">{param.name}</span>
-                        <div className="text-right">
-                          <div className="text-rose-400">{param.value}</div>
-                          <div className="text-[9px] text-slate-600">{param.unit}</div>
-                        </div>
+                    <div className="p-6 overflow-y-auto space-y-6">
+                      <div className="bg-slate-950/50 p-4 rounded border border-slate-800">
+                          <label className="text-xs font-bold text-purple-400 uppercase flex items-center gap-2 mb-2">
+                            <Copy className="w-3 h-3" />
+                            Inherit Topology (Mimicry)
+                          </label>
+                          <select 
+                            onChange={(e) => inheritTopology(e.target.value)}
+                            className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-xs text-slate-300 outline-none focus:border-purple-500"
+                          >
+                            <option value="">-- Select Template --</option>
+                            {library.map(m => (
+                              <option key={m.id} value={m.id}>{m.name} ({m.type})</option>
+                            ))}
+                          </select>
                       </div>
-                    ))}
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-400 uppercase">Node Name</label>
+                        <input 
+                          type="text" 
+                          value={newModel.name}
+                          onChange={e => setNewModel({...newModel, name: e.target.value})}
+                          className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-sm text-white focus:border-rose-500 outline-none"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <label className="text-xs font-bold text-slate-400 uppercase">Required Inputs</label>
+                          <button 
+                            onClick={() => setNewModel({...newModel, inputs: [...newModel.inputs, {name: '', unit: ''}]})}
+                            className="text-[10px] text-rose-400 hover:text-rose-300"
+                          >
+                            + ADD INPUT
+                          </button>
+                        </div>
+                        {newModel.inputs.map((inp, idx) => (
+                          <div key={idx} className="flex gap-2">
+                            <input 
+                              placeholder="Parameter"
+                              value={inp.name}
+                              onChange={e => {
+                                const list = [...newModel.inputs];
+                                list[idx].name = e.target.value;
+                                setNewModel({...newModel, inputs: list});
+                              }}
+                              className="flex-1 bg-slate-800 border border-slate-700 rounded p-2 text-xs text-white outline-none"
+                            />
+                            <input 
+                              placeholder="Unit"
+                              value={inp.unit}
+                              onChange={e => {
+                                const list = [...newModel.inputs];
+                                list[idx].unit = e.target.value;
+                                setNewModel({...newModel, inputs: list});
+                              }}
+                              className="w-16 bg-slate-800 border border-slate-700 rounded p-2 text-xs text-white outline-none"
+                            />
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <label className="text-xs font-bold text-slate-400 uppercase">Outputs</label>
+                          <button 
+                            onClick={() => setNewModel({...newModel, outputs: [...newModel.outputs, {name: ''}]})}
+                            className="text-[10px] text-emerald-400 hover:text-emerald-300"
+                          >
+                            + ADD METRIC
+                          </button>
+                        </div>
+                        {newModel.outputs.map((out, idx) => (
+                          <div key={idx} className="flex gap-2">
+                            <input 
+                              placeholder="Metric Name"
+                              value={out.name}
+                              onChange={e => {
+                                const list = [...newModel.outputs];
+                                list[idx].name = e.target.value;
+                                setNewModel({...newModel, outputs: list});
+                              }}
+                              className="flex-1 bg-slate-800 border border-slate-700 rounded p-2 text-xs text-white outline-none"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="p-4 border-t border-slate-800 bg-slate-900/50">
+                      <button 
+                        onClick={saveNewModel}
+                        className="w-full py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded flex items-center justify-center gap-2 transition-all"
+                      >
+                        <Save className="w-4 h-4" />
+                        INITIALIZE NODE
+                      </button>
+                    </div>
                   </div>
-               </div>
-             </div>
-           </div>
-        </div>
-      )}
-
-      {/* MODAL: MCP SELECTOR */}
-      {showMcpSelector && (
-        <div className="absolute inset-0 z-[70] bg-black/90 backdrop-blur flex items-center justify-center p-4">
-           <div className="w-full max-w-md bg-slate-900 border border-slate-600 rounded-xl shadow-2xl p-6">
-             <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-               <ShieldCheck className="w-5 h-5 text-emerald-500" />
-               Select Epistemic Source
-             </h3>
-             
-             {!internetWarning ? (
-               <div className="space-y-3">
-                 <button 
-                   onClick={() => handleSetMcp('EddaServer (Trusted)')}
-                   className="w-full p-4 rounded-lg border border-slate-700 bg-slate-800/50 hover:bg-slate-800 hover:border-emerald-500 transition-all text-left flex items-center gap-4 group"
-                 >
-                   <div className="p-2 bg-emerald-900/30 rounded text-emerald-500 group-hover:text-emerald-400">
-                     <Lock className="w-5 h-5" />
-                   </div>
-                   <div>
-                     <div className="text-sm font-bold text-white">EddaServer</div>
-                     <div className="text-xs text-slate-500">Verified Peer-Reviewed Repository</div>
-                   </div>
-                 </button>
-
-                 <button 
-                   onClick={() => handleSetMcp('Internet')}
-                   className="w-full p-4 rounded-lg border border-slate-700 bg-slate-800/50 hover:bg-slate-800 hover:border-amber-500 transition-all text-left flex items-center gap-4 group"
-                 >
-                   <div className="p-2 bg-amber-900/30 rounded text-amber-500 group-hover:text-amber-400">
-                     <Globe className="w-5 h-5" />
-                   </div>
-                   <div>
-                     <div className="text-sm font-bold text-white">Open Internet</div>
-                     <div className="text-xs text-slate-500">Public Domain Scraper (Unverified)</div>
-                   </div>
-                 </button>
-
-                 <div className="w-full p-4 rounded-lg border border-slate-700 bg-slate-800/50 text-left space-y-3">
-                   <div className="flex items-center gap-4">
-                     <div className="p-2 bg-purple-900/30 rounded text-purple-500">
-                       <FileText className="w-5 h-5" />
-                     </div>
-                     <div>
-                       <div className="text-sm font-bold text-white">Specific Journal</div>
-                       <div className="text-xs text-slate-500">Direct DOI/Link Injection</div>
-                     </div>
-                   </div>
-                   <div className="flex gap-2">
-                     <input 
-                       type="text" 
-                       value={journalInput}
-                       onChange={(e) => setJournalInput(e.target.value)}
-                       placeholder="Paste DOI or Link..."
-                       className="flex-1 bg-slate-950 border border-slate-700 rounded px-3 py-1 text-xs text-white outline-none focus:border-purple-500"
-                     />
-                     <button 
-                       onClick={submitJournal}
-                       className="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded"
-                     >
-                       LINK
-                     </button>
-                   </div>
-                 </div>
-               </div>
-             ) : (
-               <div className="space-y-6 text-center animate-in fade-in zoom-in-95">
-                 <div className="w-16 h-16 mx-auto bg-red-900/30 rounded-full flex items-center justify-center border-2 border-red-500 animate-pulse">
-                   <AlertTriangle className="w-8 h-8 text-red-500" />
-                 </div>
-                 <div>
-                   <h4 className="text-xl font-bold text-red-500 mb-2">EPISTEMIC HAZARD DETECTED</h4>
-                   <p className="text-sm text-slate-300 leading-relaxed">
-                     Not everything published on the internet has a strong enough truth value. Open web data often lacks the metabolic rigor required for biophysical simulation.
-                   </p>
-                 </div>
-                 <div className="flex gap-3">
-                    <button 
-                      onClick={() => setInternetWarning(false)}
-                      className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 rounded text-xs font-bold text-slate-300"
-                    >
-                      ABORT
-                    </button>
-                    <button 
-                      onClick={() => handleSetMcp('Internet (Unsafe)')}
-                      className="flex-1 py-3 bg-red-900/50 hover:bg-red-900/80 border border-red-500/50 rounded text-xs font-bold text-red-300"
-                    >
-                      PROCEED ANYWAY
-                    </button>
-                 </div>
-               </div>
-             )}
-
-             {!internetWarning && (
-               <button 
-                 onClick={() => setShowMcpSelector(false)}
-                 className="mt-6 w-full py-2 text-xs text-slate-500 hover:text-white"
-               >
-                 CANCEL
-               </button>
-             )}
-           </div>
-        </div>
-      )}
-
-      {/* CREATOR MODAL (Existing) */}
-      {showCreator && (
-        <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-slate-900 border border-slate-700 rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
-            {/* ... Existing Creator UI ... */}
-            <div className="p-4 border-b border-slate-800 flex justify-between items-center">
-              <h3 className="font-bold text-slate-100 flex items-center gap-2">
-                <Plus className="w-4 h-4 text-rose-500" />
-                Define Agentic Node
-              </h3>
-              <button onClick={() => setShowCreator(false)} className="text-slate-500 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="p-6 overflow-y-auto space-y-6">
-              <div className="bg-slate-950/50 p-4 rounded border border-slate-800">
-                 <label className="text-xs font-bold text-purple-400 uppercase flex items-center gap-2 mb-2">
-                   <Copy className="w-3 h-3" />
-                   Inherit Topology (Mimicry)
-                 </label>
-                 <select 
-                   onChange={(e) => inheritTopology(e.target.value)}
-                   className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-xs text-slate-300 outline-none focus:border-purple-500"
-                 >
-                   <option value="">-- Select Template --</option>
-                   {library.map(m => (
-                     <option key={m.id} value={m.id}>{m.name} ({m.type})</option>
-                   ))}
-                 </select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase">Node Name</label>
-                <input 
-                  type="text" 
-                  value={newModel.name}
-                  onChange={e => setNewModel({...newModel, name: e.target.value})}
-                  className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-sm text-white focus:border-rose-500 outline-none"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-slate-400 uppercase">Required Inputs</label>
-                  <button 
-                    onClick={() => setNewModel({...newModel, inputs: [...newModel.inputs, {name: '', unit: ''}]})}
-                    className="text-[10px] text-rose-400 hover:text-rose-300"
-                  >
-                    + ADD INPUT
-                  </button>
                 </div>
-                {newModel.inputs.map((inp, idx) => (
-                  <div key={idx} className="flex gap-2">
-                    <input 
-                      placeholder="Parameter"
-                      value={inp.name}
-                      onChange={e => {
-                        const list = [...newModel.inputs];
-                        list[idx].name = e.target.value;
-                        setNewModel({...newModel, inputs: list});
-                      }}
-                      className="flex-1 bg-slate-800 border border-slate-700 rounded p-2 text-xs text-white outline-none"
-                    />
-                    <input 
-                      placeholder="Unit"
-                      value={inp.unit}
-                      onChange={e => {
-                        const list = [...newModel.inputs];
-                        list[idx].unit = e.target.value;
-                        setNewModel({...newModel, inputs: list});
-                      }}
-                      className="w-16 bg-slate-800 border border-slate-700 rounded p-2 text-xs text-white outline-none"
-                    />
-                  </div>
-                ))}
-              </div>
+              )}
 
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-slate-400 uppercase">Outputs</label>
-                  <button 
-                    onClick={() => setNewModel({...newModel, outputs: [...newModel.outputs, {name: ''}]})}
-                    className="text-[10px] text-emerald-400 hover:text-emerald-300"
-                  >
-                    + ADD METRIC
-                  </button>
+              {/* AGENT PROPOSAL MODAL */}
+              {agentProposal && view === 'agents' && (
+                <div className="absolute inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-300">
+                   <div className="w-full max-w-md bg-slate-900 border border-amber-500/50 rounded-xl shadow-[0_0_50px_rgba(245,158,11,0.2)] overflow-hidden">
+                     <div className="bg-amber-500/10 p-4 border-b border-amber-500/20 flex items-center gap-3">
+                       <AlertTriangle className="w-6 h-6 text-amber-500 animate-pulse" />
+                       <div>
+                         <h3 className="font-bold text-amber-100 uppercase tracking-wider text-sm">Autonomous Optimization</h3>
+                         <div className="text-[10px] font-mono text-amber-500/80">AGENT_ZERO // HEURISTIC INTERRUPT</div>
+                       </div>
+                     </div>
+                     <div className="p-6 space-y-4">
+                       <p className="text-slate-300 text-sm leading-relaxed">
+                         <span className="font-bold text-white">{agentProposal.target.name}</span> proposes to <span className="text-amber-300">{agentProposal.reason}</span>.
+                       </p>
+                       <div className="flex items-center gap-4 py-2">
+                         <div className="flex-1 p-3 bg-slate-950 rounded border border-slate-800 flex items-center gap-2">
+                           <div className="w-2 h-2 rounded-full bg-rose-500" />
+                           <span className="text-[10px] font-mono text-slate-400">{agentProposal.source.name}</span>
+                         </div>
+                         <ArrowRight className="w-4 h-4 text-slate-600" />
+                         <div className="flex-1 p-3 bg-slate-950 rounded border border-slate-800 flex items-center gap-2">
+                           <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                           <span className="text-[10px] font-mono text-slate-400">{agentProposal.target.name}</span>
+                         </div>
+                       </div>
+                       <div className="p-3 bg-red-900/20 border border-red-900/50 rounded text-xs text-red-200 font-mono flex gap-2 items-start">
+                         <GitBranch className="w-4 h-4 shrink-0 mt-0.5" />
+                         {agentProposal.risk}
+                       </div>
+                     </div>
+                     <div className="p-4 bg-slate-950/50 border-t border-slate-800 flex gap-3">
+                       <button onClick={handleRejectProposal} className="flex-1 py-2 rounded border border-slate-700 hover:bg-slate-800 text-slate-400 text-xs font-bold flex items-center justify-center gap-2">
+                         <XCircle className="w-4 h-4" /> DENY
+                       </button>
+                       <button onClick={handleAcceptProposal} className="flex-1 py-2 rounded bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-amber-900/20">
+                         <CheckCircle2 className="w-4 h-4" /> ALLOW INTEGRATION
+                       </button>
+                     </div>
+                   </div>
                 </div>
-                {newModel.outputs.map((out, idx) => (
-                  <div key={idx} className="flex gap-2">
-                    <input 
-                      placeholder="Metric Name"
-                      value={out.name}
-                      onChange={e => {
-                        const list = [...newModel.outputs];
-                        list[idx].name = e.target.value;
-                        setNewModel({...newModel, outputs: list});
-                      }}
-                      className="flex-1 bg-slate-800 border border-slate-700 rounded p-2 text-xs text-white outline-none"
-                    />
-                  </div>
-                ))}
-              </div>
+              )}
+
             </div>
+          );
+        };
 
-            <div className="p-4 border-t border-slate-800 bg-slate-900/50">
-              <button 
-                onClick={saveNewModel}
-                className="w-full py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded flex items-center justify-center gap-2 transition-all"
-              >
-                <Save className="w-4 h-4" />
-                INITIALIZE NODE
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        // --- SUB COMPONENTS ---
 
-      {/* AGENT PROPOSAL MODAL - Only show if in agents view */}
-      {agentProposal && view === 'agents' && (
-        <div className="absolute inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-300">
-           <div className="w-full max-w-md bg-slate-900 border border-amber-500/50 rounded-xl shadow-[0_0_50px_rgba(245,158,11,0.2)] overflow-hidden">
-             <div className="bg-amber-500/10 p-4 border-b border-amber-500/20 flex items-center gap-3">
-               <AlertTriangle className="w-6 h-6 text-amber-500 animate-pulse" />
-               <div>
-                 <h3 className="font-bold text-amber-100 uppercase tracking-wider text-sm">Autonomous Optimization</h3>
-                 <div className="text-[10px] font-mono text-amber-500/80">AGENT_ZERO // HEURISTIC INTERRUPT</div>
-               </div>
-             </div>
-             <div className="p-6 space-y-4">
-               <p className="text-slate-300 text-sm leading-relaxed">
-                 <span className="font-bold text-white">{agentProposal.target.name}</span> proposes to <span className="text-amber-300">{agentProposal.reason}</span>.
-               </p>
-               <div className="flex items-center gap-4 py-2">
-                 <div className="flex-1 p-3 bg-slate-950 rounded border border-slate-800 flex items-center gap-2">
-                   <div className="w-2 h-2 rounded-full bg-rose-500" />
-                   <span className="text-[10px] font-mono text-slate-400">{agentProposal.source.name}</span>
-                 </div>
-                 <ArrowRight className="w-4 h-4 text-slate-600" />
-                 <div className="flex-1 p-3 bg-slate-950 rounded border border-slate-800 flex items-center gap-2">
-                   <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                   <span className="text-[10px] font-mono text-slate-400">{agentProposal.target.name}</span>
-                 </div>
-               </div>
-               <div className="p-3 bg-red-900/20 border border-red-900/50 rounded text-xs text-red-200 font-mono flex gap-2 items-start">
-                 <GitBranch className="w-4 h-4 shrink-0 mt-0.5" />
-                 {agentProposal.risk}
-               </div>
-             </div>
-             <div className="p-4 bg-slate-950/50 border-t border-slate-800 flex gap-3">
-               <button onClick={handleRejectProposal} className="flex-1 py-2 rounded border border-slate-700 hover:bg-slate-800 text-slate-400 text-xs font-bold flex items-center justify-center gap-2">
-                 <XCircle className="w-4 h-4" /> DENY
-               </button>
-               <button onClick={handleAcceptProposal} className="flex-1 py-2 rounded bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-amber-900/20">
-                 <CheckCircle2 className="w-4 h-4" /> ALLOW INTEGRATION
-               </button>
-             </div>
-           </div>
-        </div>
-      )}
+        const NavButton = ({ active, onClick, icon: Icon, label, alert }) => (
+          <button 
+            onClick={onClick}
+            className={`relative flex items-center gap-2 px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wide transition-all ${
+              active 
+                ? 'bg-rose-500 text-slate-950 shadow-[0_0_15px_rgba(244,63,94,0.4)]' 
+                : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
+            }`}
+          >
+            {alert && (
+              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+              </span>
+            )}
+            <Icon className="w-3 h-3" />
+            {label}
+          </button>
+        );
 
-    </div>
-  );
-};
+        const Particle = ({ start, end, progress, type }) => {
+          if (progress > 1) return null;
+          const sx = parseFloat(start.x);
+          const sy = parseFloat(start.y);
+          const ex = parseFloat(end.x);
+          const ey = parseFloat(end.y);
+          const cx = sx + (ex - sx) * progress;
+          const cy = sy + (ey - sy) * progress;
+          const color = type === 'input' ? '#fbbf24' : '#10b981';
+          return (
+            <g style={{ transform: `translate(${cx}%, ${cy}%)` }}>
+              <circle r="3" fill={color} className="animate-pulse" />
+              <circle r="6" fill={color} opacity="0.3" />
+            </g>
+          );
+        };
 
-// --- SUB COMPONENTS ---
-
-const NavButton = ({ active, onClick, icon: Icon, label, alert }) => (
-  <button 
-    onClick={onClick}
-    className={`relative flex items-center gap-2 px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wide transition-all ${
-      active 
-        ? 'bg-rose-500 text-slate-950 shadow-[0_0_15px_rgba(244,63,94,0.4)]' 
-        : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
-    }`}
-  >
-    {alert && (
-      <span className="absolute -top-1 -right-1 flex h-3 w-3">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-        <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
-      </span>
-    )}
-    <Icon className="w-3 h-3" />
-    {label}
-  </button>
-);
-
-const Particle = ({ start, end, progress, type }) => {
-  if (progress > 1) return null;
-  const sx = parseFloat(start.x);
-  const sy = parseFloat(start.y);
-  const ex = parseFloat(end.x);
-  const ey = parseFloat(end.y);
-  const cx = sx + (ex - sx) * progress;
-  const cy = sy + (ey - sy) * progress;
-  const color = type === 'input' ? '#fbbf24' : '#10b981';
-  return (
-    <g style={{ transform: `translate(${cx}%, ${cy}%)` }}>
-      <circle r="3" fill={color} className="animate-pulse" />
-      <circle r="6" fill={color} opacity="0.3" />
-    </g>
-  );
-};
-
-export default YeastGenesis;
+        // --- MOUNT ---
+        const root = createRoot(document.getElementById('root'));
+        root.render(<YeastGenesis />);
+    </script>
+</body>
+</html>
