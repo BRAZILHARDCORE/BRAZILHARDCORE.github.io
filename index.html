@@ -428,14 +428,30 @@
             document.getElementById('back-to-list').onclick = () => switchView('list');
         }
 
+        /**
+         * SHUFFLE HELPER
+         */
+        function getShuffledIndices(length) {
+            let arr = Array.from({length}, (_, i) => i);
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
         function addTarget() {
             const id = state.targets.length + 1;
+            // Create a randomized order of scenarios for THIS specific target
+            const sequence = getShuffledIndices(SCENARIOS.length);
+            
             const target = {
                 id: id,
                 name: `TARGET-${String(id).padStart(2, '0')}`,
                 lastMessage: "Connection established.",
                 stats: { tv: 20, hr: 80 },
-                scenarioIdx: 0,
+                scenarioIdx: 0, // Now represents the index in the 'sequence' array
+                sequence: sequence,
                 messages: [{ text: "System Initialized. Optimization protocols active.", type: "system" }]
             };
             state.targets.push(target);
@@ -470,11 +486,18 @@
             switchView('chat');
             renderMessages();
             updateStatsUI();
+            
+            // If only the system message exists, start the randomized scenario sequence
             if (target.messages.length === 1) {
                 loadNextScenario();
             } else {
-                const currentScenario = SCENARIOS[target.scenarioIdx];
-                renderStrategies(target.scenarioIdx < SCENARIOS.length ? currentScenario.strategies : []);
+                // Otherwise, show strategies for the current scenario in the sequence
+                if (target.scenarioIdx < target.sequence.length) {
+                    const actualScenarioIdx = target.sequence[target.scenarioIdx];
+                    renderStrategies(SCENARIOS[actualScenarioIdx].strategies);
+                } else {
+                    renderStrategies([]);
+                }
             }
         }
 
@@ -492,13 +515,20 @@
 
         function loadNextScenario() {
             const target = state.targets.find(t => t.id === state.currentTargetId);
-            if (target.scenarioIdx >= SCENARIOS.length) {
+            
+            // Check sequence completion
+            if (target.scenarioIdx >= target.sequence.length) {
                 renderStrategies([]); 
                 return;
             }
-            const scenario = SCENARIOS[target.scenarioIdx];
+
+            // Get the actual scenario from the randomized sequence
+            const actualScenarioIdx = target.sequence[target.scenarioIdx];
+            const scenario = SCENARIOS[actualScenarioIdx];
+            
             typingUI.classList.remove('hidden');
             strategiesGrid.innerHTML = ''; 
+            
             setTimeout(() => {
                 typingUI.classList.add('hidden');
                 target.messages.push({ text: scenario.incoming, type: 'incoming' });
@@ -511,9 +541,10 @@
 
         function renderStrategies(strategies = []) {
             strategiesGrid.innerHTML = '';
+            const target = state.targets.find(t => t.id === state.currentTargetId);
+            
             if (strategies.length === 0) {
-                const target = state.targets.find(t => t.id === state.currentTargetId);
-                const status = target.scenarioIdx >= SCENARIOS.length ? "OPTIMIZATION COMPLETE" : "WAITING FOR RESPONSE...";
+                const status = target.scenarioIdx >= target.sequence.length ? "OPTIMIZATION COMPLETE" : "WAITING FOR RESPONSE...";
                 strategiesGrid.innerHTML = `<div class="col-span-2 text-center text-xs text-gray-600 py-4">${status}</div>`;
                 return;
             }
@@ -532,7 +563,10 @@
             target.lastMessage = `You: ${strategy.text}`;
             target.stats.tv = Math.min(100, Math.max(0, target.stats.tv + strategy.tv));
             target.stats.hr = Math.min(100, Math.max(0, target.stats.hr + strategy.hr));
+            
+            // Increment the pointer in our random sequence
             target.scenarioIdx++;
+            
             renderMessages();
             updateStatsUI();
             renderChatList();
