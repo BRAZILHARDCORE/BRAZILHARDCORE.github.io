@@ -1,62 +1,558 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Buffer | Optimized Human Interaction</title>
-    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0a0a0c;
+            --panel-color: #141417;
+            --accent-color: #00ff41; /* Terminal Green */
+            --danger-color: #ff3e3e; /* Humanity Red */
+            --text-muted: #88888b;
+            --text-main: #e1e1e6;
+            --border-color: #222;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            border-left: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            background: linear-gradient(180deg, #0a0a0c 0%, #111114 100%);
+            position: relative;
+        }
+
+        /* Views */
+        .view {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+        .view.active { display: flex; }
+
+        /* Header */
+        .status-bar {
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(20, 20, 23, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 20;
+        }
+
+        .brand {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: var(--accent-color);
+            font-size: 0.85rem;
+        }
+
+        /* List View Components */
+        .chat-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+
+        .chat-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            transition: background 0.2s;
+        }
+
+        .chat-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .target-avatar {
+            width: 48px;
+            height: 48px;
+            background: #1d1d21;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-color);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            flex-shrink: 0;
+        }
+
+        .target-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .target-name {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+
+        .target-preview {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .target-meta {
+            text-align: right;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .add-target-btn {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            width: 56px;
+            height: 56px;
+            background: var(--accent-color);
+            color: black;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(0, 255, 65, 0.3);
+            cursor: pointer;
+            transition: transform 0.2s;
+            z-index: 30;
+        }
+
+        .add-target-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Chat View Components */
+        .hud {
+            padding: 15px 20px;
+            display: flex;
+            gap: 15px;
+            background: rgba(0,0,0,0.3);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .stat-container { flex: 1; }
+
+        .stat-label {
+            display: block;
+            font-size: 0.6rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            letter-spacing: 0.05em;
+        }
+
+        .progress-bar-bg {
+            height: 3px;
+            background: #222;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--accent-color);
+            transition: width 0.5s ease-out;
+        }
+
+        .progress-bar-fill.humanity { background: var(--danger-color); }
+
+        .chat-interface {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .message { max-width: 85%; animation: fadeIn 0.2s ease-out; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .bubble { padding: 10px 14px; border-radius: 4px; font-size: 0.9rem; line-height: 1.4; }
+        .incoming .bubble { background: #1a1a1e; border: 1px solid #2a2a2e; }
+        .outgoing .bubble { background: var(--accent-color); color: #000; font-weight: 500; }
+        .message.system { align-self: center; text-align: center; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; width: 100%; }
+
+        .control-panel { background: var(--panel-color); border-top: 1px solid var(--border-color); padding: 15px; }
+        .strategies-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .strategy-btn {
+            background: #1d1d21;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .strategy-btn:hover:not(:disabled) { border-color: var(--accent-color); background: #242429; }
+        .strategy-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .strategy-btn .name { display: block; font-size: 0.8rem; font-weight: 600; }
+        .strategy-btn .desc { display: block; font-size: 0.65rem; color: var(--text-muted); }
+
+        .back-btn {
+            cursor: pointer;
+            padding: 8px;
+            margin-right: 10px;
+            color: var(--text-muted);
+        }
+
+        .back-btn:hover { color: var(--text-main); }
+
+        .hidden { display: none !important; }
+    </style>
 </head>
 <body>
+
     <div class="app-container">
-        <!-- Header / Status Bar -->
-        <header class="status-bar">
-            <div class="brand">THE BUFFER v2.4</div>
-            <div class="stopwatch">00:00:00</div>
-        </header>
-
-        <!-- Stats HUD -->
-        <section class="hud">
-            <div class="stat-container" id="transaction-stat">
-                <span class="stat-label">TRANSACTIONAL VALUE</span>
-                <div class="progress-bar-bg">
-                    <div class="progress-bar-fill" id="tv-fill" style="width: 50%;"></div>
-                </div>
+        
+        <!-- VIEW: CHAT LIST -->
+        <section id="view-list" class="view active">
+            <header class="status-bar">
+                <div class="brand">THE BUFFER // NETWORK</div>
+                <div class="mono text-[0.7rem] text-[#888]">PROTOCOLS ACTIVE</div>
+            </header>
+            
+            <div class="chat-list" id="chat-list-container">
+                <!-- Chat Items Injected Here -->
             </div>
-            <div class="stat-container" id="humanity-stat">
-                <span class="stat-label">HUMANITY RESIDUE</span>
-                <div class="progress-bar-bg">
-                    <div class="progress-bar-fill humanity" id="hr-fill" style="width: 50%;"></div>
-                </div>
+
+            <div class="add-target-btn" id="add-target-btn" title="Establish New Connection">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             </div>
         </section>
 
-        <!-- Chat Area -->
-        <main class="chat-interface" id="chat-interface">
-            <!-- Messages will be injected here -->
-            <div class="message system">
-                <div class="bubble">System Initialized. Optimization protocols active.</div>
-            </div>
-        </main>
+        <!-- VIEW: ACTIVE CHAT -->
+        <section id="view-chat" class="view">
+            <header class="status-bar">
+                <div class="flex items-center">
+                    <div class="back-btn" id="back-to-list">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </div>
+                    <div class="brand" id="active-target-name">TARGET-XX</div>
+                </div>
+                <div class="stopwatch mono" id="stopwatch">00:00:00</div>
+            </header>
 
-        <!-- Typing Indicator -->
-        <div class="typing-indicator hidden" id="typing-indicator">
-            <span></span><span></span><span></span>
-        </div>
+            <section class="hud">
+                <div class="stat-container">
+                    <span class="stat-label">TRANSACTIONAL VALUE</span>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" id="tv-fill"></div></div>
+                </div>
+                <div class="stat-container">
+                    <span class="stat-label">HUMANITY RESIDUE</span>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill humanity" id="hr-fill"></div></div>
+                </div>
+            </section>
 
-        <!-- Strategy Control Panel -->
-        <section class="control-panel" id="control-panel">
-            <div class="panel-header">SELECT STRATEGY</div>
-            <div class="strategies-grid" id="strategies-grid">
-                <!-- Buttons injected by JS -->
+            <main class="chat-interface" id="chat-messages">
+                <!-- Messages -->
+            </main>
+
+            <div class="px-5 py-2 hidden" id="typing-ui">
+                <div class="flex gap-1">
+                    <div class="w-1 h-1 bg-gray-500 rounded-full animate-bounce"></div>
+                    <div class="w-1 h-1 bg-gray-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                    <div class="w-1 h-1 bg-gray-500 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                </div>
             </div>
+
+            <section class="control-panel">
+                <div class="mono text-[0.6rem] text-[#888] mb-3 uppercase tracking-widest">Select Optimization Strategy</div>
+                <div class="strategies-grid" id="strategies-grid">
+                    <!-- Buttons -->
+                </div>
+            </section>
         </section>
+
     </div>
 
-    <script src="scenarios.js"></script>
-    <script src="script.js"></script>
+    <script>
+        /** * DATA STRUCTURE - 10 VARIATIONS
+         */
+        const SCENARIOS = [
+            {
+                incoming: "I saw you were online but didn't reply to my last three texts. Are you ignoring me?",
+                strategies: [
+                    { name: "GASLIGHT", desc: "Redirect blame to Target's perception", text: "I think you're overthinking things. I've been in meetings all day.", tv: 15, hr: -20 },
+                    { name: "DEFER", desc: "Schedule for future bandwidth", text: "I can't talk right now, let's catch up later tonight.", tv: 5, hr: -5 },
+                    { name: "VULNERABILITY", desc: "Simulate emotional honesty", text: "I've been feeling really overwhelmed and needed some space. I'm sorry.", tv: -15, hr: 30 }
+                ]
+            },
+            {
+                incoming: "Hey, did you finish that report? The client is breathing down my neck and I haven't heard from you.",
+                strategies: [
+                    { name: "PROFESSIONAL", desc: "Assert authority/progress", text: "It's in the final review stage. You'll have it by EOD.", tv: 20, hr: -5 },
+                    { name: "APOLOGETIC", desc: "Soften the delay", text: "So sorry for the hold up! I'm polishing it now.", tv: 10, hr: 10 },
+                    { name: "DELEGATE", desc: "Shift responsibility", text: "I was waiting on the data from accounting. Have they sent it to you yet?", tv: 25, hr: -15 }
+                ]
+            },
+            {
+                incoming: "I was thinking about that trip we took last summer. Do you ever miss how things used to be?",
+                strategies: [
+                    { name: "NOSTALGIA", desc: "Reciprocate sentiment", text: "Every day. Those were the best times.", tv: -10, hr: 25 },
+                    { name: "NEUTRAL", desc: "Acknowledge without engagement", text: "It was a great trip. We should do it again sometime.", tv: 5, hr: 5 },
+                    { name: "PIVOT", desc: "Avoid emotional depth", text: "Hard to look back when there's so much to do now, right?", tv: 15, hr: -20 }
+                ]
+            },
+            {
+                incoming: "I'm having a bit of a crisis and really need to talk. Can you call me for five minutes?",
+                strategies: [
+                    { name: "EMERGENCY_EXIT", desc: "Polite refusal", text: "I'm so sorry, I'm literally just walking into a dinner. Can I text you tomorrow?", tv: 15, hr: -15 },
+                    { name: "MINIMAL_SUPPORT", desc: "Text-based limited aid", text: "I can't call, but I'm here on text. What's wrong?", tv: 5, hr: 15 },
+                    { name: "FULL_EMPATHY", desc: "Prioritize connection", text: "Calling you right now. Hold on.", tv: -30, hr: 40 }
+                ]
+            },
+            {
+                incoming: "My parents are asking when they'll see you again. What should I tell them?",
+                strategies: [
+                    { name: "COMMIT", desc: "Direct affirmation", text: "Tell them I'd love to see them next weekend!", tv: -10, hr: 20 },
+                    { name: "VAGUE", desc: "Non-committal delay", text: "Just tell them things are crazy at work and I'll check my calendar.", tv: 10, hr: -5 },
+                    { name: "BOUNDARY", desc: "Assert personal space", text: "I'm not really ready for family gatherings right now.", tv: 20, hr: -30 }
+                ]
+            },
+            {
+                incoming: "Must be nice to have so much free time that you can just disappear for days without saying anything.",
+                strategies: [
+                    { name: "DEFENSIVE", desc: "Counter-attack", text: "Actually, I've been working 12-hour shifts. Not exactly 'free time'.", tv: 15, hr: -20 },
+                    { name: "PLACATE", desc: "Minimize friction", text: "I'm sorry I went dark, I didn't mean to make you feel that way.", tv: 5, hr: 15 },
+                    { name: "SILENCE", desc: "Assert dominance through absence", text: "[Read receipt sent. No response.]", tv: 30, hr: -40 }
+                ]
+            },
+            {
+                incoming: "Hey, about the money for the tickets... are you going to Venmo me today?",
+                strategies: [
+                    { name: "TRANSACTIONAL", desc: "Immediate resolution", text: "Just sent it. Check your app.", tv: 20, hr: 5 },
+                    { name: "DELAY", desc: "Resource management", text: "Waiting for my paycheck to clear on Friday. I'll get you then.", tv: 5, hr: -5 },
+                    { name: "DEFLECT", desc: "Question the amount", text: "Wait, wasn't it supposed to be half that because of the discount?", tv: 10, hr: -15 }
+                ]
+            },
+            {
+                incoming: "How's your day going? Just wanted to say hi and that I'm thinking of you.",
+                strategies: [
+                    { name: "LOW_EFFORT", desc: "Minimum viable response", text: "Good! Hope yours is too.", tv: 10, hr: 0 },
+                    { name: "RECIPROCATE", desc: "Standard social exchange", text: "Thanks! That's so sweet. I'm having a busy but good one.", tv: 0, hr: 15 },
+                    { name: "DEEP_ENGAGE", desc: "Invest in relationship", text: "That made my day. I was just thinking about you too. Let's talk tonight?", tv: -10, hr: 25 }
+                ]
+            },
+            {
+                incoming: "We need to talk. Let me know when you're free today.",
+                strategies: [
+                    { name: "PRE-EMPTIVE", desc: "Control the narrative", text: "Is this about the argument? I already told you my stance.", tv: 20, hr: -20 },
+                    { name: "COOPERATIVE", desc: "Yield to target", text: "Sure, I'm free at 5 PM. I'll call you then.", tv: -5, hr: 15 },
+                    { name: "AVOIDANT", desc: "Infinite delay", text: "Super packed today. Can this wait until the weekend?", tv: 15, hr: -10 }
+                ]
+            },
+            {
+                incoming: "I found your hoodie in my car. Do you want it back or should I just donate it?",
+                strategies: [
+                    { name: "LOGISTICAL", desc: "Direct retrieval", text: "I'll swing by and grab it from the porch tomorrow.", tv: 10, hr: 0 },
+                    { name: "SENTIMENTAL", desc: "Use item as anchor", text: "Keep it for now. It looks better on you anyway.", tv: -10, hr: 20 },
+                    { name: "DISMISSIVE", desc: "Sever connection", text: "Donate it. I don't need it.", tv: 25, hr: -30 }
+                ]
+            }
+        ];
+
+        let state = {
+            targets: [], 
+            currentTargetId: null,
+            timer: 0
+        };
+
+        // DOM Elements
+        const viewList = document.getElementById('view-list');
+        const viewChat = document.getElementById('view-chat');
+        const chatListContainer = document.getElementById('chat-list-container');
+        const activeTargetName = document.getElementById('active-target-name');
+        const chatMessages = document.getElementById('chat-messages');
+        const strategiesGrid = document.getElementById('strategies-grid');
+        const typingUI = document.getElementById('typing-ui');
+        const tvFill = document.getElementById('tv-fill');
+        const hrFill = document.getElementById('hr-fill');
+        const stopwatch = document.getElementById('stopwatch');
+
+        function init() {
+            addTarget();
+            setInterval(() => {
+                state.timer++;
+                const s = state.timer % 60;
+                const m = Math.floor(state.timer / 60) % 60;
+                const h = Math.floor(state.timer / 3600);
+                stopwatch.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            }, 1000);
+            document.getElementById('add-target-btn').onclick = addTarget;
+            document.getElementById('back-to-list').onclick = () => switchView('list');
+        }
+
+        function addTarget() {
+            const id = state.targets.length + 1;
+            const target = {
+                id: id,
+                name: `TARGET-${String(id).padStart(2, '0')}`,
+                lastMessage: "Connection established.",
+                stats: { tv: 20, hr: 80 },
+                scenarioIdx: 0,
+                messages: [{ text: "System Initialized. Optimization protocols active.", type: "system" }]
+            };
+            state.targets.push(target);
+            renderChatList();
+        }
+
+        function renderChatList() {
+            chatListContainer.innerHTML = '';
+            state.targets.forEach(t => {
+                const item = document.createElement('div');
+                item.className = 'chat-item';
+                item.onclick = () => openChat(t.id);
+                item.innerHTML = `
+                    <div class="target-avatar">T${t.id}</div>
+                    <div class="target-info">
+                        <div class="target-name">${t.name}</div>
+                        <div class="target-preview">${t.lastMessage}</div>
+                    </div>
+                    <div class="target-meta">
+                        <div class="text-[var(--accent-color)]">${t.stats.tv}% TV</div>
+                        <div>${t.stats.hr}% HR</div>
+                    </div>
+                `;
+                chatListContainer.appendChild(item);
+            });
+        }
+
+        function openChat(id) {
+            state.currentTargetId = id;
+            const target = state.targets.find(t => t.id === id);
+            activeTargetName.textContent = target.name;
+            switchView('chat');
+            renderMessages();
+            updateStatsUI();
+            if (target.messages.length === 1) {
+                loadNextScenario();
+            } else {
+                const currentScenario = SCENARIOS[target.scenarioIdx];
+                renderStrategies(target.scenarioIdx < SCENARIOS.length ? currentScenario.strategies : []);
+            }
+        }
+
+        function renderMessages() {
+            const target = state.targets.find(t => t.id === state.currentTargetId);
+            chatMessages.innerHTML = '';
+            target.messages.forEach(m => {
+                const div = document.createElement('div');
+                div.className = `message ${m.type}`;
+                div.innerHTML = `<div class="bubble">${m.text}</div>`;
+                chatMessages.appendChild(div);
+            });
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function loadNextScenario() {
+            const target = state.targets.find(t => t.id === state.currentTargetId);
+            if (target.scenarioIdx >= SCENARIOS.length) {
+                renderStrategies([]); 
+                return;
+            }
+            const scenario = SCENARIOS[target.scenarioIdx];
+            typingUI.classList.remove('hidden');
+            strategiesGrid.innerHTML = ''; 
+            setTimeout(() => {
+                typingUI.classList.add('hidden');
+                target.messages.push({ text: scenario.incoming, type: 'incoming' });
+                target.lastMessage = scenario.incoming;
+                renderMessages();
+                renderStrategies(scenario.strategies);
+                renderChatList(); 
+            }, 1200);
+        }
+
+        function renderStrategies(strategies = []) {
+            strategiesGrid.innerHTML = '';
+            if (strategies.length === 0) {
+                const target = state.targets.find(t => t.id === state.currentTargetId);
+                const status = target.scenarioIdx >= SCENARIOS.length ? "OPTIMIZATION COMPLETE" : "WAITING FOR RESPONSE...";
+                strategiesGrid.innerHTML = `<div class="col-span-2 text-center text-xs text-gray-600 py-4">${status}</div>`;
+                return;
+            }
+            strategies.forEach(s => {
+                const btn = document.createElement('button');
+                btn.className = 'strategy-btn';
+                btn.innerHTML = `<span class="name">${s.name}</span><span class="desc">${s.desc}</span>`;
+                btn.onclick = () => executeStrategy(s);
+                strategiesGrid.appendChild(btn);
+            });
+        }
+
+        function executeStrategy(strategy) {
+            const target = state.targets.find(t => t.id === state.currentTargetId);
+            target.messages.push({ text: strategy.text, type: 'outgoing' });
+            target.lastMessage = `You: ${strategy.text}`;
+            target.stats.tv = Math.min(100, Math.max(0, target.stats.tv + strategy.tv));
+            target.stats.hr = Math.min(100, Math.max(0, target.stats.hr + strategy.hr));
+            target.scenarioIdx++;
+            renderMessages();
+            updateStatsUI();
+            renderChatList();
+            loadNextScenario();
+        }
+
+        function updateStatsUI() {
+            const target = state.targets.find(t => t.id === state.currentTargetId);
+            tvFill.style.width = `${target.stats.tv}%`;
+            hrFill.style.width = `${target.stats.hr}%`;
+        }
+
+        function switchView(viewName) {
+            viewList.classList.remove('active');
+            viewChat.classList.remove('active');
+            if (viewName === 'list') viewList.classList.add('active');
+            else viewChat.classList.add('active');
+        }
+
+        init();
+    </script>
 </body>
 </html>
