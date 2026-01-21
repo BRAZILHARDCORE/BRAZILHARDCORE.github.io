@@ -75,7 +75,6 @@
             animation: logoPopIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.3s forwards;
         }
 
-        /* B dots above the B */
         .logo-text::before {
             content: '• •';
             position: absolute;
@@ -86,7 +85,6 @@
             animation: dotBounce 0.5s ease-in-out infinite alternate;
         }
 
-        /* Cute face on the i */
         .logo-face {
             position: absolute;
             right: -5px;
@@ -176,7 +174,6 @@
             }
         }
 
-        /* Loading spinner on B-MO screen */
         .loading-spin {
             animation: spin 2s linear infinite;
             transform-origin: center;
@@ -235,14 +232,144 @@
             display: flex !important;
         }
 
-        #game-overlay {
+        #game-overlay,
+        #mole-overlay {
             background: rgba(255, 255, 255, 0.95);
             z-index: 50;
         }
 
-        /* Pacman specific styles */
-        .pacman-wrapper {
+        /* ==================== WHACK-A-MOLE ==================== */
+        .mole-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            max-width: 320px;
+            margin: 0 auto;
+        }
+
+        .mole-hole {
+            aspect-ratio: 1;
+            background: #f0f0f0;
+            border: 3px solid #1a1a1a;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
             position: relative;
+            overflow: hidden;
+            transition: transform 0.1s ease;
+            min-height: 80px;
+        }
+
+        .mole-hole:active {
+            transform: scale(0.95);
+        }
+
+        .mole-hole .character {
+            position: absolute;
+            bottom: -100%;
+            transition: bottom 0.15s ease-out;
+            font-size: 2.5rem;
+            pointer-events: none;
+        }
+
+        .mole-hole.active .character {
+            bottom: 10%;
+        }
+
+        .mole-hole .character.hit {
+            animation: hitShake 0.3s ease;
+        }
+
+        @keyframes hitShake {
+
+            0%,
+            100% {
+                transform: rotate(0deg);
+            }
+
+            25% {
+                transform: rotate(-15deg);
+            }
+
+            75% {
+                transform: rotate(15deg);
+            }
+        }
+
+        .mole-hole::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30%;
+            background: linear-gradient(to top, #1a1a1a, transparent);
+            border-radius: 0 0 50% 50%;
+            pointer-events: none;
+        }
+
+        /* Dr. Koplin SVG in hole */
+        .dr-koplin-mole {
+            width: 50px;
+            height: 50px;
+        }
+
+        /* Pill in hole */
+        .pill-mole {
+            width: 30px;
+            height: 30px;
+            background: white;
+            border: 2px solid black;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+
+        .score-flash {
+            position: absolute;
+            font-weight: bold;
+            font-size: 1.2rem;
+            animation: scoreFloat 0.6s ease-out forwards;
+            pointer-events: none;
+        }
+
+        .score-flash.positive {
+            color: #22c55e;
+        }
+
+        .score-flash.negative {
+            color: #ef4444;
+        }
+
+        @keyframes scoreFloat {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+        }
+
+        /* Timer bar */
+        .timer-bar {
+            height: 8px;
+            background: #e5e5e5;
+            border: 2px solid black;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .timer-fill {
+            height: 100%;
+            background: black;
+            transition: width 0.1s linear;
         }
     </style>
 </head>
@@ -267,83 +394,48 @@
         <!-- Dr. Koplin & B-MO Scene -->
         <svg width="500" height="320" viewBox="0 0 500 320" fill="none" xmlns="http://www.w3.org/2000/svg"
             class="max-w-full h-auto">
-            <!-- Ground line -->
             <line x1="50" y1="280" x2="450" y2="280" stroke="black" stroke-width="3" />
-
-            <!-- Dr. Koplin Character -->
             <g id="dr-koplin-waiting" transform="translate(100, 80)">
-                <!-- Head -->
                 <circle cx="40" cy="30" r="28" stroke="black" stroke-width="3" fill="white" />
-                <!-- Glasses -->
                 <rect x="22" y="22" width="14" height="10" rx="2" stroke="black" stroke-width="2" fill="white" />
                 <rect x="44" y="22" width="14" height="10" rx="2" stroke="black" stroke-width="2" fill="white" />
                 <line x1="36" y1="27" x2="44" y2="27" stroke="black" stroke-width="2" />
-                <!-- Eyes behind glasses -->
                 <circle cx="29" cy="27" r="2" fill="black" />
                 <circle cx="51" cy="27" r="2" fill="black" />
-                <!-- Smile -->
                 <path d="M32 42 Q40 50 48 42" stroke="black" stroke-width="2" fill="none" />
-                <!-- Stethoscope emoji suggestion -->
                 <text x="34" y="8" font-size="12">🩺</text>
-
-                <!-- Body (lab coat) -->
                 <path d="M10 70 L20 55 L60 55 L70 70 L70 150 L10 150 Z" stroke="black" stroke-width="3" fill="white" />
-                <!-- Coat details -->
                 <line x1="40" y1="55" x2="40" y2="140" stroke="black" stroke-width="1" stroke-dasharray="4 4" />
-                <!-- Pocket -->
                 <rect x="50" y="90" width="15" height="20" stroke="black" stroke-width="1.5" fill="white" />
-
-                <!-- Legs -->
                 <rect x="20" y="150" width="18" height="45" stroke="black" stroke-width="3" fill="white" />
                 <rect x="42" y="150" width="18" height="45" stroke="black" stroke-width="3" fill="white" />
-
-                <!-- Tapping foot -->
                 <rect class="foot-tap" x="42" y="195" width="22" height="8" rx="3" stroke="black" stroke-width="3"
                     fill="white" />
                 <rect x="16" y="195" width="22" height="8" rx="3" stroke="black" stroke-width="3" fill="white" />
             </g>
-
-            <!-- B-MO Style Computer -->
             <g id="b-mo-computer" transform="translate(280, 100)">
-                <!-- Main body -->
                 <rect width="120" height="150" rx="15" stroke="black" stroke-width="3" fill="white" />
-
-                <!-- Screen -->
                 <rect x="15" y="15" width="90" height="70" rx="8" stroke="black" stroke-width="2" fill="white" />
-
-                <!-- Face on screen (B-MO style) with loading -->
                 <g class="bmo-blink">
                     <circle cx="45" cy="45" r="4" fill="black" />
                     <circle cx="75" cy="45" r="4" fill="black" />
                 </g>
-
-                <!-- Loading spinner circle around face -->
                 <g class="loading-spin">
                     <circle cx="60" cy="50" r="25" stroke="black" stroke-width="2" fill="none"
                         stroke-dasharray="15 10" />
                 </g>
-
-                <!-- Mouth (waiting expression) -->
                 <ellipse cx="60" cy="65" rx="8" ry="4" stroke="black" stroke-width="2" fill="white" />
-
-                <!-- D-pad -->
                 <g transform="translate(20, 100)">
                     <rect x="8" y="0" width="10" height="25" rx="2" stroke="black" stroke-width="2" fill="white" />
                     <rect x="0" y="8" width="25" height="10" rx="2" stroke="black" stroke-width="2" fill="white" />
                 </g>
-
-                <!-- Buttons -->
                 <circle cx="85" cy="105" r="6" stroke="black" stroke-width="2" fill="white" />
                 <circle cx="100" cy="115" r="6" stroke="black" stroke-width="2" fill="white" />
-
-                <!-- Speaker grille -->
                 <g transform="translate(55, 130)">
                     <line x1="0" y1="0" x2="20" y2="0" stroke="black" stroke-width="1.5" />
                     <line x1="0" y1="5" x2="20" y2="5" stroke="black" stroke-width="1.5" />
                     <line x1="0" y1="10" x2="20" y2="10" stroke="black" stroke-width="1.5" />
                 </g>
-
-                <!-- Little legs -->
                 <rect x="25" y="150" width="12" height="15" rx="3" stroke="black" stroke-width="2" fill="white" />
                 <rect x="83" y="150" width="12" height="15" rx="3" stroke="black" stroke-width="2" fill="white" />
             </g>
@@ -369,25 +461,23 @@
         </div>
     </div>
 
-    <!-- 3. Game Stage - B&W Pacman -->
-    <div id="game-stage" class="screen-container flex-col items-center justify-center space-y-8 w-full max-w-6xl">
+    <!-- 3a. Game Stage - Pac-Man (Desktop) -->
+    <div id="game-stage-pacman"
+        class="screen-container flex-col items-center justify-center space-y-8 w-full max-w-6xl">
         <div
             class="flex flex-col lg:flex-row gap-12 items-stretch bg-white p-8 border-2 border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
-
-            <!-- Game Canvas -->
             <div class="relative flex-grow flex items-center justify-center bg-gray-50 p-4 border border-black">
                 <canvas id="pacmanCanvas" width="400" height="400"></canvas>
                 <div id="game-overlay" class="absolute inset-0 flex flex-col items-center justify-center hidden">
                     <h2 id="overlay-text" class="text-4xl font-bold mb-6 serif">GAME OVER</h2>
                     <p id="overlay-message" class="text-sm opacity-70 mb-6 max-w-xs text-center"></p>
                     <div class="flex gap-4">
-                        <button onclick="resetGame()" class="btn-pill">TRY AGAIN</button>
+                        <button onclick="resetPacman()" class="btn-pill">TRY AGAIN</button>
                         <button onclick="returnToWaiting()" class="btn-pill bg-black text-white">BACK</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Sidebar with Legend -->
             <div class="w-full lg:w-80 flex flex-col justify-between">
                 <div class="space-y-6">
                     <div class="flex justify-between items-center border-b-2 border-black pb-4">
@@ -395,9 +485,7 @@
                         <button onclick="returnToWaiting()" class="text-xs font-bold underline hover:no-underline">←
                             Return</button>
                     </div>
-
                     <div class="space-y-5">
-                        <!-- Dots = Wegovy Pills -->
                         <div class="flex items-start gap-4 p-3 border-2 border-black rounded-lg">
                             <div
                                 class="w-6 h-6 mt-1 rounded-full border-2 border-black flex-shrink-0 flex items-center justify-center">
@@ -405,53 +493,38 @@
                             </div>
                             <div>
                                 <p class="font-bold text-sm uppercase">Wegovy Abnehmpillen</p>
-                                <p class="text-xs opacity-60 mt-1">Quick fix weight loss pills. Collect them for points,
-                                    but remember - they're not the real solution!</p>
+                                <p class="text-xs opacity-60 mt-1">Quick fix weight loss pills. Collect for points!</p>
                             </div>
                         </div>
-
-                        <!-- Ghosts = Dr. Koplins -->
                         <div class="flex items-start gap-4 p-3 border-2 border-black rounded-lg">
                             <div class="w-8 h-8 flex-shrink-0">
                                 <svg viewBox="0 0 40 45" width="32" height="36">
-                                    <!-- Ghost body -->
                                     <path
                                         d="M8 20 Q8 5 20 5 Q32 5 32 20 L32 38 Q29 35 26 38 Q23 35 20 38 Q17 35 14 38 Q11 35 8 38 Z"
                                         stroke="black" stroke-width="2" fill="white" />
-                                    <!-- Glasses -->
                                     <rect x="11" y="16" width="6" height="5" rx="1" stroke="black" stroke-width="1.5"
                                         fill="white" />
                                     <rect x="23" y="16" width="6" height="5" rx="1" stroke="black" stroke-width="1.5"
                                         fill="white" />
                                     <line x1="17" y1="18" x2="23" y2="18" stroke="black" stroke-width="1.5" />
-                                    <!-- Eyes -->
                                     <circle cx="14" cy="18" r="1.5" fill="black" />
                                     <circle cx="26" cy="18" r="1.5" fill="black" />
                                 </svg>
                             </div>
                             <div>
                                 <p class="font-bold text-sm uppercase">Dr. Koplins</p>
-                                <p class="text-xs opacity-60 mt-1">Holistic weight loss coaches! They're trying to catch
-                                    you to teach you the sustainable way to health.</p>
+                                <p class="text-xs opacity-60 mt-1">Holistic coaches trying to teach you!</p>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Score -->
                     <div class="pt-6 border-t-2 border-black">
                         <div class="flex justify-between items-end">
                             <span class="text-xs font-bold uppercase opacity-50">Score</span>
-                            <span id="score-val" class="text-5xl font-bold serif">0</span>
+                            <span id="score-val-pacman" class="text-5xl font-bold serif">0</span>
                         </div>
                     </div>
-
-                    <!-- Controls hint -->
-                    <div class="text-xs opacity-50 text-center">
-                        Use Arrow Keys or WASD to move
-                    </div>
+                    <div class="text-xs opacity-50 text-center">Use Arrow Keys or WASD to move</div>
                 </div>
-
-                <!-- Footer Email in Game Stage -->
                 <div class="mt-8 pt-6 border-t-2 border-black space-y-3">
                     <p class="text-[10px] font-bold uppercase tracking-widest text-center">B-Mi is coming soon</p>
                     <form onsubmit="handleEmailSubmit(event)" class="flex flex-col gap-2">
@@ -461,20 +534,68 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Mobile Controls -->
-        <div class="lg:hidden flex flex-col items-center gap-2 mt-4">
-            <button onclick="setDir('up')" class="btn-pill px-8 py-3">↑</button>
-            <div class="flex gap-4">
-                <button onclick="setDir('left')" class="btn-pill px-8 py-3">←</button>
-                <button onclick="setDir('down')" class="btn-pill px-8 py-3">↓</button>
-                <button onclick="setDir('right')" class="btn-pill px-8 py-3">→</button>
+    <!-- 3b. Game Stage - Whack-a-Mole (Mobile) -->
+    <div id="game-stage-mole"
+        class="screen-container flex-col items-center justify-center space-y-6 w-full max-w-md px-4">
+        <div class="w-full bg-white p-6 border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold serif">Catch Dr. Koplin!</h3>
+                <button onclick="returnToWaiting()" class="text-xs font-bold underline">← Back</button>
             </div>
+
+            <!-- Timer -->
+            <div class="timer-bar mb-4">
+                <div id="mole-timer" class="timer-fill" style="width: 100%"></div>
+            </div>
+
+            <!-- Score -->
+            <div class="flex justify-between items-center mb-6">
+                <span class="text-xs font-bold uppercase opacity-50">Score</span>
+                <span id="score-val-mole" class="text-3xl font-bold serif">0</span>
+            </div>
+
+            <!-- Mole Grid -->
+            <div id="mole-grid" class="mole-grid">
+                <!-- 9 holes generated by JS -->
+            </div>
+
+            <!-- Legend -->
+            <div class="mt-6 pt-4 border-t-2 border-black space-y-3">
+                <div class="flex items-center gap-3 text-xs">
+                    <span class="text-lg">🩺</span>
+                    <span><strong>Dr. Koplin</strong> = +10 pts (Tap!)</span>
+                </div>
+                <div class="flex items-center gap-3 text-xs">
+                    <span class="text-lg">💊</span>
+                    <span><strong>Wegovy Pill</strong> = -5 pts (Avoid!)</span>
+                </div>
+            </div>
+
+            <!-- Game Over Overlay -->
+            <div id="mole-overlay" class="absolute inset-0 flex-col items-center justify-center hidden rounded-lg">
+                <h2 id="mole-overlay-text" class="text-3xl font-bold mb-4 serif">Time's Up!</h2>
+                <p id="mole-overlay-score" class="text-lg mb-6"></p>
+                <div class="flex gap-3">
+                    <button onclick="resetMole()" class="btn-pill">PLAY AGAIN</button>
+                    <button onclick="returnToWaiting()" class="btn-pill bg-black text-white">BACK</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Email form -->
+        <div class="w-full pt-4 border-t-2 border-black space-y-3">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-center">B-Mi is coming soon</p>
+            <form onsubmit="handleEmailSubmit(event)" class="flex flex-col gap-2">
+                <input type="email" placeholder="E-mail" required class="input-pill text-xs py-2">
+                <button type="submit" class="btn-pill text-[10px] uppercase py-2">Notify Me</button>
+            </form>
         </div>
     </div>
 
     <!-- Success Modal for Email -->
-    <div id="success-modal" class="fixed inset-0 bg-white/90 z-[300] hidden flex items-center justify-center p-6">
+    <div id="success-modal" class="fixed inset-0 bg-white/90 z-[300] hidden items-center justify-center p-6">
         <div
             class="max-w-sm w-full border-4 border-black p-8 text-center bg-white space-y-6 shadow-[16px_16px_0px_0px_rgba(0,0,0,1)]">
             <h2 class="text-3xl font-bold serif">You're on the list! 🎉</h2>
@@ -485,10 +606,205 @@
     </div>
 
     <script>
-        // ==================== GAME LOGIC ====================
+        // ==================== DEVICE DETECTION ====================
+        function isMobile() {
+            return window.innerWidth < 1024 || 'ontouchstart' in window;
+        }
+
+        // ==================== GAME ROUTER ====================
+        function startGame() {
+            document.getElementById('waiting-stage').classList.remove('active');
+            if (isMobile()) {
+                document.getElementById('game-stage-mole').classList.add('active');
+                initMoleGame();
+            } else {
+                document.getElementById('game-stage-pacman').classList.add('active');
+                resetPacman();
+            }
+        }
+
+        function returnToWaiting() {
+            pacmanActive = false;
+            moleActive = false;
+            document.getElementById('game-stage-pacman').classList.remove('active');
+            document.getElementById('game-stage-mole').classList.remove('active');
+            document.getElementById('waiting-stage').classList.add('active');
+        }
+
+        // ==================== EMAIL HANDLER ====================
+        function handleEmailSubmit(e) {
+            e.preventDefault();
+            const email = e.target.querySelector('input[type="email"]').value;
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerText;
+
+            submitBtn.innerText = 'Sending...';
+            submitBtn.disabled = true;
+
+            fetch('https://script.google.com/macros/s/AKfycbzzhlQPxcpDscKTUSggtq9BkFvL6-JqHHbPzXnsRKWZY_oo92CcJQhDiKOJXZDWua0eIg/exec', {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email })
+            })
+                .then(() => {
+                    document.getElementById('success-modal').classList.remove('hidden');
+                    document.getElementById('success-modal').classList.add('flex');
+                    e.target.reset();
+                })
+                .catch(err => {
+                    alert('Something went wrong. Please try again.');
+                    console.error(err);
+                })
+                .finally(() => {
+                    submitBtn.innerText = originalText;
+                    submitBtn.disabled = false;
+                });
+        }
+
+        function closeModal() {
+            document.getElementById('success-modal').classList.add('hidden');
+            document.getElementById('success-modal').classList.remove('flex');
+        }
+
+        // ==================== WHACK-A-MOLE GAME ====================
+        let moleScore = 0;
+        let moleActive = false;
+        let moleTimer = 30; // 30 seconds
+        let moleInterval;
+        let spawnInterval;
+        const moleGrid = document.getElementById('mole-grid');
+
+        function initMoleGame() {
+            // Create 9 holes
+            moleGrid.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                const hole = document.createElement('div');
+                hole.className = 'mole-hole';
+                hole.dataset.index = i;
+                hole.innerHTML = '<div class="character"></div>';
+                hole.addEventListener('click', handleMoleClick);
+                hole.addEventListener('touchstart', handleMoleClick, { passive: true });
+                moleGrid.appendChild(hole);
+            }
+            resetMole();
+        }
+
+        function resetMole() {
+            moleScore = 0;
+            moleTimer = 30;
+            moleActive = true;
+            document.getElementById('score-val-mole').innerText = moleScore;
+            document.getElementById('mole-timer').style.width = '100%';
+            document.getElementById('mole-overlay').classList.add('hidden');
+            document.getElementById('mole-overlay').classList.remove('flex');
+
+            // Clear all holes
+            document.querySelectorAll('.mole-hole').forEach(hole => {
+                hole.classList.remove('active');
+                hole.dataset.type = '';
+            });
+
+            // Start timer
+            if (moleInterval) clearInterval(moleInterval);
+            moleInterval = setInterval(() => {
+                moleTimer -= 0.1;
+                document.getElementById('mole-timer').style.width = (moleTimer / 30 * 100) + '%';
+                if (moleTimer <= 0) {
+                    endMoleGame();
+                }
+            }, 100);
+
+            // Start spawning
+            if (spawnInterval) clearInterval(spawnInterval);
+            spawnMole();
+            spawnInterval = setInterval(spawnMole, 800);
+        }
+
+        function spawnMole() {
+            if (!moleActive) return;
+
+            // Pick random inactive hole
+            const holes = Array.from(document.querySelectorAll('.mole-hole:not(.active)'));
+            if (holes.length === 0) return;
+
+            const hole = holes[Math.floor(Math.random() * holes.length)];
+
+            // 70% Dr. Koplin, 30% Pill
+            const isDrKoplin = Math.random() < 0.7;
+            hole.dataset.type = isDrKoplin ? 'koplin' : 'pill';
+
+            const character = hole.querySelector('.character');
+            if (isDrKoplin) {
+                character.innerHTML = '🩺';
+            } else {
+                character.innerHTML = '💊';
+            }
+
+            hole.classList.add('active');
+
+            // Hide after random time
+            setTimeout(() => {
+                hole.classList.remove('active');
+                hole.dataset.type = '';
+            }, 600 + Math.random() * 400);
+        }
+
+        function handleMoleClick(e) {
+            if (!moleActive) return;
+
+            const hole = e.currentTarget;
+            if (!hole.classList.contains('active')) return;
+
+            const type = hole.dataset.type;
+            const character = hole.querySelector('.character');
+
+            let points = 0;
+            if (type === 'koplin') {
+                points = 10;
+                moleScore += 10;
+            } else if (type === 'pill') {
+                points = -5;
+                moleScore = Math.max(0, moleScore - 5);
+            }
+
+            // Show score flash
+            showScoreFlash(hole, points);
+
+            // Animate hit
+            character.classList.add('hit');
+            setTimeout(() => character.classList.remove('hit'), 300);
+
+            // Hide immediately
+            hole.classList.remove('active');
+            hole.dataset.type = '';
+
+            document.getElementById('score-val-mole').innerText = moleScore;
+        }
+
+        function showScoreFlash(hole, points) {
+            const flash = document.createElement('div');
+            flash.className = 'score-flash ' + (points > 0 ? 'positive' : 'negative');
+            flash.innerText = (points > 0 ? '+' : '') + points;
+            hole.appendChild(flash);
+            setTimeout(() => flash.remove(), 600);
+        }
+
+        function endMoleGame() {
+            moleActive = false;
+            clearInterval(moleInterval);
+            clearInterval(spawnInterval);
+
+            document.getElementById('mole-overlay-text').innerText = moleScore >= 100 ? 'Amazing! 🎉' : "Time's Up!";
+            document.getElementById('mole-overlay-score').innerText = 'Final Score: ' + moleScore;
+            document.getElementById('mole-overlay').classList.remove('hidden');
+            document.getElementById('mole-overlay').classList.add('flex');
+        }
+
+        // ==================== PAC-MAN GAME ====================
         const canvas = document.getElementById('pacmanCanvas');
         const ctx = canvas.getContext('2d');
-        const scoreEl = document.getElementById('score-val');
+        const scoreElPacman = document.getElementById('score-val-pacman');
         const overlay = document.getElementById('game-overlay');
         const overlayText = document.getElementById('overlay-text');
         const overlayMessage = document.getElementById('overlay-message');
@@ -496,10 +812,9 @@
         const tileSize = 20;
         const rows = 20;
         const cols = 20;
-        let score = 0;
-        let gameActive = false;
+        let pacmanScore = 0;
+        let pacmanActive = false;
 
-        // Map: 1 = wall, 2 = dot (Wegovy pill), 0 = empty path
         const initialMap = [
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             [1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1],
@@ -523,16 +838,9 @@
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         ];
         let gameMap = [];
-
         let pacman = { x: 1, y: 1, dir: 'right', nextDir: 'right', mouthOpen: 0, mouthDir: 1 };
-        let ghosts = [
-            { x: 9, y: 8, dir: 'up' },
-            { x: 10, y: 8, dir: 'down' },
-            { x: 9, y: 10, dir: 'left' },
-            { x: 10, y: 10, dir: 'right' }
-        ];
+        let ghosts = [];
 
-        // Keyboard controls
         window.addEventListener('keydown', (e) => {
             const keyMap = {
                 'ArrowUp': 'up', 'w': 'up', 'W': 'up',
@@ -546,109 +854,61 @@
             }
         });
 
-        function setDir(dir) {
-            pacman.nextDir = dir;
-        }
-
-        function startGame() {
-            document.getElementById('waiting-stage').classList.remove('active');
-            document.getElementById('game-stage').classList.add('active');
-            resetGame();
-        }
-
-        function returnToWaiting() {
-            gameActive = false;
-            document.getElementById('game-stage').classList.remove('active');
-            document.getElementById('waiting-stage').classList.add('active');
-        }
-
-        function handleEmailSubmit(e) {
-            e.preventDefault();
-            document.getElementById('success-modal').classList.remove('hidden');
-            document.getElementById('success-modal').classList.add('flex');
-            e.target.reset();
-        }
-
-        function closeModal() {
-            document.getElementById('success-modal').classList.add('hidden');
-            document.getElementById('success-modal').classList.remove('flex');
-        }
-
-        function resetGame() {
-            score = 0;
-            scoreEl.innerText = score;
+        function resetPacman() {
+            pacmanScore = 0;
+            scoreElPacman.innerText = pacmanScore;
             gameMap = initialMap.map(row => [...row]);
             pacman = { x: 1, y: 1, dir: 'right', nextDir: 'right', mouthOpen: 0, mouthDir: 1 };
             ghosts = [
-                { x: 9, y: 8, dir: 'up', moveTimer: 0 },
-                { x: 10, y: 8, dir: 'down', moveTimer: 5 },
-                { x: 9, y: 10, dir: 'left', moveTimer: 10 },
-                { x: 10, y: 10, dir: 'right', moveTimer: 15 }
+                { x: 9, y: 8, dir: 'up' },
+                { x: 10, y: 8, dir: 'down' },
+                { x: 9, y: 10, dir: 'left' },
+                { x: 10, y: 10, dir: 'right' }
             ];
-            gameActive = true;
+            pacmanActive = true;
             overlay.classList.add('hidden');
             lastTime = performance.now();
-            requestAnimationFrame(gameLoop);
+            requestAnimationFrame(pacmanLoop);
         }
 
         let lastTime = 0;
         const tickRate = 180;
 
-        function gameLoop(timestamp) {
-            if (!gameActive) return;
+        function pacmanLoop(timestamp) {
+            if (!pacmanActive) return;
             if (timestamp - lastTime > tickRate) {
-                update();
+                updatePacman();
                 lastTime = timestamp;
             }
-            draw();
-            requestAnimationFrame(gameLoop);
+            drawPacman();
+            requestAnimationFrame(pacmanLoop);
         }
 
-        function update() {
-            // Move Pacman
+        function updatePacman() {
             moveEntity(pacman, true);
-
-            // Eat dots
             if (gameMap[pacman.y] && gameMap[pacman.y][pacman.x] === 2) {
                 gameMap[pacman.y][pacman.x] = 0;
-                score += 10;
-                scoreEl.innerText = score;
+                pacmanScore += 10;
+                scoreElPacman.innerText = pacmanScore;
             }
-
-            // Move ghosts
             ghosts.forEach(ghost => moveEntity(ghost, false));
-
-            // Check collision with ghosts
             ghosts.forEach(ghost => {
-                if (ghost.x === pacman.x && ghost.y === pacman.y) {
-                    endGame(false);
-                }
+                if (ghost.x === pacman.x && ghost.y === pacman.y) endPacmanGame(false);
             });
-
-            // Check win (all dots collected)
-            if (gameMap.flat().filter(t => t === 2).length === 0) {
-                endGame(true);
-            }
+            if (gameMap.flat().filter(t => t === 2).length === 0) endPacmanGame(true);
         }
 
         function moveEntity(entity, isPlayer) {
             let tryDir = isPlayer ? entity.nextDir : entity.dir;
-
             if (canMove(entity.x, entity.y, tryDir)) {
                 applyMove(entity, tryDir);
             } else if (canMove(entity.x, entity.y, entity.dir)) {
                 applyMove(entity, entity.dir);
             } else if (!isPlayer) {
-                // Ghost picks random direction
                 const dirs = ['up', 'down', 'left', 'right'].filter(d => canMove(entity.x, entity.y, d));
                 if (dirs.length > 0) {
-                    // 60% chance to move towards pacman
                     if (Math.random() < 0.6) {
-                        dirs.sort((a, b) => {
-                            const distA = getDistAfterMove(entity.x, entity.y, a);
-                            const distB = getDistAfterMove(entity.x, entity.y, b);
-                            return distA - distB;
-                        });
+                        dirs.sort((a, b) => getDistAfterMove(entity.x, entity.y, a) - getDistAfterMove(entity.x, entity.y, b));
                     }
                     entity.dir = dirs[0];
                 }
@@ -657,149 +917,84 @@
 
         function getDistAfterMove(x, y, dir) {
             let nx = x, ny = y;
-            if (dir === 'up') ny--;
-            else if (dir === 'down') ny++;
-            else if (dir === 'left') nx--;
-            else if (dir === 'right') nx++;
+            if (dir === 'up') ny--; else if (dir === 'down') ny++; else if (dir === 'left') nx--; else if (dir === 'right') nx++;
             return Math.abs(nx - pacman.x) + Math.abs(ny - pacman.y);
         }
 
         function canMove(x, y, dir) {
             let nx = x, ny = y;
-            if (dir === 'up') ny--;
-            else if (dir === 'down') ny++;
-            else if (dir === 'left') nx--;
-            else if (dir === 'right') nx++;
+            if (dir === 'up') ny--; else if (dir === 'down') ny++; else if (dir === 'left') nx--; else if (dir === 'right') nx++;
             return gameMap[ny] && gameMap[ny][nx] !== 1 && gameMap[ny][nx] !== undefined;
         }
 
         function applyMove(entity, dir) {
-            if (dir === 'up') entity.y--;
-            else if (dir === 'down') entity.y++;
-            else if (dir === 'left') entity.x--;
-            else if (dir === 'right') entity.x++;
+            if (dir === 'up') entity.y--; else if (dir === 'down') entity.y++; else if (dir === 'left') entity.x--; else if (dir === 'right') entity.x++;
             entity.dir = dir;
         }
 
-        function draw() {
+        function drawPacman() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw maze
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
                     const tile = gameMap[r][c];
-                    const x = c * tileSize;
-                    const y = r * tileSize;
-
+                    const x = c * tileSize, y = r * tileSize;
                     if (tile === 1) {
-                        // Wall
-                        ctx.strokeStyle = 'black';
-                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = 'black'; ctx.lineWidth = 2;
                         ctx.strokeRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
                     } else if (tile === 2) {
-                        // Dot (Wegovy pill)
                         ctx.fillStyle = 'black';
-                        ctx.beginPath();
-                        ctx.arc(x + tileSize / 2, y + tileSize / 2, 3, 0, Math.PI * 2);
-                        ctx.fill();
+                        ctx.beginPath(); ctx.arc(x + tileSize / 2, y + tileSize / 2, 3, 0, Math.PI * 2); ctx.fill();
                     }
                 }
             }
 
-            // Draw Pacman
-            const px = pacman.x * tileSize + tileSize / 2;
-            const py = pacman.y * tileSize + tileSize / 2;
-
-            // Animate mouth
+            const px = pacman.x * tileSize + tileSize / 2, py = pacman.y * tileSize + tileSize / 2;
             pacman.mouthOpen += 0.3 * pacman.mouthDir;
-            if (pacman.mouthOpen > 0.4 || pacman.mouthOpen < 0) {
-                pacman.mouthDir *= -1;
-            }
+            if (pacman.mouthOpen > 0.4 || pacman.mouthOpen < 0) pacman.mouthDir *= -1;
 
-            // Calculate rotation
             let rotation = 0;
             if (pacman.dir === 'right') rotation = 0;
             else if (pacman.dir === 'left') rotation = Math.PI;
             else if (pacman.dir === 'down') rotation = Math.PI / 2;
             else if (pacman.dir === 'up') rotation = -Math.PI / 2;
 
-            ctx.save();
-            ctx.translate(px, py);
-            ctx.rotate(rotation);
-
-            ctx.strokeStyle = 'black';
-            ctx.fillStyle = 'white';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(0, 0, 8, pacman.mouthOpen, Math.PI * 2 - pacman.mouthOpen);
-            ctx.lineTo(0, 0);
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-
-            // Eye
-            ctx.fillStyle = 'black';
-            ctx.beginPath();
-            ctx.arc(0, -4, 1.5, 0, Math.PI * 2);
-            ctx.fill();
-
+            ctx.save(); ctx.translate(px, py); ctx.rotate(rotation);
+            ctx.strokeStyle = 'black'; ctx.fillStyle = 'white'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(0, 0, 8, pacman.mouthOpen, Math.PI * 2 - pacman.mouthOpen);
+            ctx.lineTo(0, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = 'black'; ctx.beginPath(); ctx.arc(0, -4, 1.5, 0, Math.PI * 2); ctx.fill();
             ctx.restore();
 
-            // Draw Ghosts (Dr. Koplins with glasses)
             ghosts.forEach(g => {
-                const gx = g.x * tileSize + tileSize / 2;
-                const gy = g.y * tileSize + tileSize / 2;
-
-                ctx.strokeStyle = 'black';
-                ctx.fillStyle = 'white';
-                ctx.lineWidth = 2;
-
-                // Ghost body
-                ctx.beginPath();
-                ctx.arc(gx, gy - 2, 7, Math.PI, 0, false);
+                const gx = g.x * tileSize + tileSize / 2, gy = g.y * tileSize + tileSize / 2;
+                ctx.strokeStyle = 'black'; ctx.fillStyle = 'white'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(gx, gy - 2, 7, Math.PI, 0, false);
                 ctx.lineTo(gx + 7, gy + 6);
-                // Wavy bottom
                 ctx.quadraticCurveTo(gx + 5, gy + 3, gx + 3, gy + 6);
                 ctx.quadraticCurveTo(gx, gy + 3, gx - 3, gy + 6);
                 ctx.quadraticCurveTo(gx - 5, gy + 3, gx - 7, gy + 6);
-                ctx.lineTo(gx - 7, gy - 2);
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
-
-                // Glasses
+                ctx.lineTo(gx - 7, gy - 2); ctx.closePath(); ctx.fill(); ctx.stroke();
                 ctx.lineWidth = 1;
-                ctx.fillStyle = 'white';
-                ctx.strokeRect(gx - 6, gy - 4, 4, 3);
-                ctx.strokeRect(gx + 2, gy - 4, 4, 3);
-                ctx.beginPath();
-                ctx.moveTo(gx - 2, gy - 2.5);
-                ctx.lineTo(gx + 2, gy - 2.5);
-                ctx.stroke();
-
-                // Eyes behind glasses
+                ctx.strokeRect(gx - 6, gy - 4, 4, 3); ctx.strokeRect(gx + 2, gy - 4, 4, 3);
+                ctx.beginPath(); ctx.moveTo(gx - 2, gy - 2.5); ctx.lineTo(gx + 2, gy - 2.5); ctx.stroke();
                 ctx.fillStyle = 'black';
-                ctx.beginPath();
-                ctx.arc(gx - 4, gy - 2.5, 1, 0, Math.PI * 2);
-                ctx.arc(gx + 4, gy - 2.5, 1, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(gx - 4, gy - 2.5, 1, 0, Math.PI * 2); ctx.arc(gx + 4, gy - 2.5, 1, 0, Math.PI * 2); ctx.fill();
             });
         }
 
-        function endGame(win) {
-            gameActive = false;
+        function endPacmanGame(win) {
+            pacmanActive = false;
             overlay.classList.remove('hidden');
-
             if (win) {
                 overlayText.innerText = "HOLISTIC SUCCESS! 🎉";
-                overlayMessage.innerText = "You collected all the pills! But remember: Real weight loss comes from sustainable habits, not quick fixes.";
+                overlayMessage.innerText = "You collected all the pills! But remember: Real weight loss comes from sustainable habits.";
             } else {
                 overlayText.innerText = "LESSON LEARNED 🩺";
-                overlayMessage.innerText = "Dr. Koplin caught you! Time to learn about holistic weight loss approaches.";
+                overlayMessage.innerText = "Dr. Koplin caught you! Time to learn about holistic approaches.";
             }
         }
 
-        // Auto-hide logo after animation completes
+        // Auto-hide logo after animation
         setTimeout(() => {
             document.getElementById('logo-intro').style.display = 'none';
         }, 4000);
