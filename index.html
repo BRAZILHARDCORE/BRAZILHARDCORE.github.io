@@ -1,1004 +1,404 @@
-
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>B-Mi | Coming Soon</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Inter:wght@400;600&display=swap"
-        rel="stylesheet">
+    <title>Minimal Interactive Site</title>
     <style>
-        :root {
-            --ink-black: #000000;
-            --ink-white: #FFFFFF;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            background-color: var(--ink-white);
-            color: var(--ink-black);
-            font-family: 'Inter', sans-serif;
-            overflow-x: hidden;
-            margin: 0;
-            cursor: default;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            overflow: hidden;
+            background: #000;
+            color: #fff;
         }
 
-        h1,
-        h2,
-        h3,
-        .serif {
-            font-family: 'Merriweather', serif;
-        }
-
-        /* Scanline / Paper Texture Effect */
-        body::before {
-            content: " ";
-            display: block;
+        /* Background scene (replaces 3D) */
+        #scene {
             position: fixed;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
-            background: linear-gradient(rgba(0, 0, 0, 0.01) 50%, transparent 50%);
-            background-size: 100% 4px;
-            z-index: 100;
-            pointer-events: none;
+            inset: 0;
+            z-index: 0;
+            background: linear-gradient(45deg, #1a1a1a, #2d2d2d);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
             opacity: 0.3;
         }
 
-        /* ==================== LOGO INTRO ==================== */
-        #logo-intro {
+        /* Loading screen */
+        .loading {
             position: fixed;
             inset: 0;
+            z-index: 1000;
+            background: #000;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: white;
-            z-index: 200;
-            animation: fadeOut 0.8s ease-in-out forwards;
-            animation-delay: 3s;
+            transition: opacity 0.5s;
         }
 
-        .logo-container {
-            position: relative;
-        }
-
-        .logo-text {
-            font-family: 'Merriweather', serif;
-            font-size: 6rem;
-            font-weight: 700;
-            position: relative;
+        .loading.hidden {
             opacity: 0;
-            animation: logoPopIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.3s forwards;
-        }
-
-        .logo-text::before {
-            content: '• •';
-            position: absolute;
-            top: -15px;
-            left: 10px;
-            font-size: 1.2rem;
-            letter-spacing: 8px;
-            animation: dotBounce 0.5s ease-in-out infinite alternate;
-        }
-
-        .logo-face {
-            position: absolute;
-            right: -5px;
-            top: -20px;
-            font-size: 1.5rem;
-            animation: blink 3s infinite;
-        }
-
-        @keyframes logoPopIn {
-            0% {
-                opacity: 0;
-                transform: scale(0.5) rotate(-5deg);
-            }
-
-            60% {
-                opacity: 1;
-                transform: scale(1.1) rotate(2deg);
-            }
-
-            100% {
-                opacity: 1;
-                transform: scale(1) rotate(0deg);
-            }
-        }
-
-        @keyframes dotBounce {
-            0% {
-                transform: translateY(0);
-            }
-
-            100% {
-                transform: translateY(-8px);
-            }
-        }
-
-        @keyframes blink {
-
-            0%,
-            90%,
-            100% {
-                opacity: 1;
-            }
-
-            95% {
-                opacity: 0;
-            }
-        }
-
-        @keyframes fadeOut {
-            to {
-                opacity: 0;
-                visibility: hidden;
-                pointer-events: none;
-            }
-        }
-
-        /* ==================== WAITING STAGE ==================== */
-        .foot-tap {
-            animation: tap-frame 0.4s infinite steps(2);
-            transform-origin: top center;
-        }
-
-        @keyframes tap-frame {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(-8deg);
-            }
-        }
-
-        .bmo-blink {
-            animation: eye-blink 4s infinite;
-        }
-
-        @keyframes eye-blink {
-
-            0%,
-            90%,
-            100% {
-                transform: scaleY(1);
-            }
-
-            95% {
-                transform: scaleY(0.1);
-            }
-        }
-
-        .loading-spin {
-            animation: spin 2s linear infinite;
-            transform-origin: center;
-        }
-
-        @keyframes spin {
-            from {
-                transform: rotate(0deg);
-            }
-
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* ==================== UI COMPONENTS ==================== */
-        .btn-pill {
-            border: 2px solid var(--ink-black);
-            border-radius: 9999px;
-            padding: 10px 24px;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            background: var(--ink-white);
-            color: var(--ink-black);
-        }
-
-        .btn-pill:hover {
-            background: var(--ink-black);
-            color: var(--ink-white);
-        }
-
-        .input-pill {
-            border: 2px solid var(--ink-black);
-            border-radius: 9999px;
-            padding: 10px 20px;
-            background: var(--ink-white);
-            outline: none;
-            width: 100%;
-        }
-
-        .input-pill:focus {
-            box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
-        }
-
-        canvas {
-            image-rendering: pixelated;
-            border: 3px solid black;
-            background: white;
-        }
-
-        .screen-container {
-            display: none;
-        }
-
-        .active {
-            display: flex !important;
-        }
-
-        #game-overlay,
-        #mole-overlay {
-            background: rgba(255, 255, 255, 0.95);
-            z-index: 50;
-        }
-
-        /* ==================== WHACK-A-MOLE ==================== */
-        .mole-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            max-width: 320px;
-            margin: 0 auto;
-        }
-
-        .mole-hole {
-            aspect-ratio: 1;
-            background: #f0f0f0;
-            border: 3px solid #1a1a1a;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.1s ease;
-            min-height: 80px;
-        }
-
-        .mole-hole:active {
-            transform: scale(0.95);
-        }
-
-        .mole-hole .character {
-            position: absolute;
-            bottom: -100%;
-            transition: bottom 0.15s ease-out;
-            font-size: 2.5rem;
             pointer-events: none;
         }
 
-        .mole-hole.active .character {
-            bottom: 10%;
+        .loading-bar {
+            width: 200px;
+            height: 4px;
+            background: #333;
+            margin-top: 20px;
+            overflow: hidden;
         }
 
-        .mole-hole .character.hit {
-            animation: hitShake 0.3s ease;
-        }
-
-        @keyframes hitShake {
-
-            0%,
-            100% {
-                transform: rotate(0deg);
-            }
-
-            25% {
-                transform: rotate(-15deg);
-            }
-
-            75% {
-                transform: rotate(15deg);
-            }
-        }
-
-        .mole-hole::after {
+        .loading-bar::after {
             content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 30%;
-            background: linear-gradient(to top, #1a1a1a, transparent);
-            border-radius: 0 0 50% 50%;
-            pointer-events: none;
+            display: block;
+            height: 100%;
+            background: #fff;
+            width: 0%;
+            animation: load 2s ease-out forwards;
         }
 
-        /* Dr. Koplin SVG in hole */
-        .dr-koplin-mole {
-            width: 50px;
-            height: 50px;
+        @keyframes load {
+            to { width: 100%; }
         }
 
-        /* Pill in hole */
-        .pill-mole {
-            width: 30px;
-            height: 30px;
-            background: white;
-            border: 2px solid black;
-            border-radius: 50%;
+        /* Enter gate */
+        .enter-gate {
+            position: fixed;
+            inset: 0;
+            z-index: 999;
+            background: rgba(0,0,0,0.9);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.8rem;
+            transition: opacity 0.5s;
         }
 
-        .score-flash {
-            position: absolute;
-            font-weight: bold;
-            font-size: 1.2rem;
-            animation: scoreFloat 0.6s ease-out forwards;
+        .enter-gate.hidden {
+            opacity: 0;
             pointer-events: none;
         }
 
-        .score-flash.positive {
-            color: #22c55e;
+        .enter-btn {
+            padding: 20px 60px;
+            font-size: 1.5rem;
+            background: transparent;
+            border: 2px solid #fff;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s;
         }
 
-        .score-flash.negative {
-            color: #ef4444;
+        .enter-btn:hover {
+            background: #fff;
+            color: #000;
         }
 
-        @keyframes scoreFloat {
-            0% {
-                opacity: 1;
-                transform: translateY(0);
-            }
-
-            100% {
-                opacity: 0;
-                transform: translateY(-30px);
-            }
+        /* Menu button */
+        .menu-btn {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            z-index: 100;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            padding: 0;
         }
 
-        /* Timer bar */
-        .timer-bar {
-            height: 8px;
-            background: #e5e5e5;
-            border: 2px solid black;
-            border-radius: 999px;
-            overflow: hidden;
+        .menu-btn span {
+            display: block;
+            width: 100%;
+            height: 2px;
+            background: #fff;
+            margin: 8px 0;
+            transition: all 0.3s;
         }
 
-        .timer-fill {
-            height: 100%;
-            background: black;
-            transition: width 0.1s linear;
+        .menu-btn.active span:nth-child(1) {
+            transform: rotate(45deg) translate(9px, 9px);
+        }
+
+        .menu-btn.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .menu-btn.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(9px, -9px);
+        }
+
+        /* Full menu overlay */
+        .menu {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            height: 100vh;
+            z-index: 99;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            transition: right 0.5s cubic-bezier(0.77, 0, 0.175, 1);
+        }
+
+        .menu.open {
+            right: 0;
+        }
+
+        .menu a {
+            font-size: 3rem;
+            color: #fff;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            opacity: 0;
+            transform: translateX(50px);
+        }
+
+        .menu.open a {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .menu.open a:nth-child(1) { transition-delay: 0.1s; }
+        .menu.open a:nth-child(2) { transition-delay: 0.2s; }
+        .menu.open a:nth-child(3) { transition-delay: 0.3s; }
+        .menu.open a:nth-child(4) { transition-delay: 0.4s; }
+        .menu.open a:nth-child(5) { transition-delay: 0.5s; }
+
+        .menu a:hover {
+            transform: translateX(-10px);
+            color: #999;
+        }
+
+        /* Content overlays */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px;
+            transform: translateY(100%);
+            transition: transform 0.6s cubic-bezier(0.77, 0, 0.175, 1);
+        }
+
+        .overlay.active {
+            transform: translateY(0);
+        }
+
+        .overlay-close {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: transparent;
+            border: 2px solid #fff;
+            color: #fff;
+            padding: 10px 30px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .overlay-close:hover {
+            background: #fff;
+            color: #000;
+        }
+
+        .overlay h2 {
+            font-size: 3rem;
+            margin-bottom: 30px;
+        }
+
+        .overlay-content {
+            max-width: 800px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        /* Gallery navigation */
+        .gallery-nav {
+            position: absolute;
+            bottom: 30px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .gallery-nav button {
+            background: transparent;
+            border: 1px solid #fff;
+            color: #fff;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 1.5rem;
+        }
+
+        .gallery-nav button:hover {
+            background: #fff;
+            color: #000;
+        }
+
+        .gallery-nav span {
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
         }
     </style>
 </head>
-
-<body class="min-h-screen flex flex-col items-center justify-center p-4">
-
-    <!-- 1. Logo Intro Animation -->
-    <div id="logo-intro">
-        <div class="logo-container">
-            <div class="logo-text">
-                B-Mi
-                <span class="logo-face">‿‿</span>
-            </div>
-        </div>
-        <p class="mt-6 text-sm opacity-50 animate-pulse">Loading your holistic journey...</p>
+<body>
+    <!-- Background Scene -->
+    <div id="scene">
+        YOUR LOGO
     </div>
 
-    <!-- 2. Waiting Stage - Dr. Koplin & B-MO -->
-    <div id="waiting-stage"
-        class="screen-container flex-col items-center justify-center text-center space-y-10 active w-full max-w-4xl">
+    <!-- Loading Screen -->
+    <div class="loading" id="loading">
+        <div>LOADING...</div>
+        <div class="loading-bar"></div>
+    </div>
 
-        <!-- Dr. Koplin & B-MO Scene -->
-        <svg width="500" height="320" viewBox="0 0 500 320" fill="none" xmlns="http://www.w3.org/2000/svg"
-            class="max-w-full h-auto">
-            <line x1="50" y1="280" x2="450" y2="280" stroke="black" stroke-width="3" />
-            <g id="dr-koplin-waiting" transform="translate(100, 80)">
-                <circle cx="40" cy="30" r="28" stroke="black" stroke-width="3" fill="white" />
-                <rect x="22" y="22" width="14" height="10" rx="2" stroke="black" stroke-width="2" fill="white" />
-                <rect x="44" y="22" width="14" height="10" rx="2" stroke="black" stroke-width="2" fill="white" />
-                <line x1="36" y1="27" x2="44" y2="27" stroke="black" stroke-width="2" />
-                <circle cx="29" cy="27" r="2" fill="black" />
-                <circle cx="51" cy="27" r="2" fill="black" />
-                <path d="M32 42 Q40 50 48 42" stroke="black" stroke-width="2" fill="none" />
-                <text x="34" y="8" font-size="12">🩺</text>
-                <path d="M10 70 L20 55 L60 55 L70 70 L70 150 L10 150 Z" stroke="black" stroke-width="3" fill="white" />
-                <line x1="40" y1="55" x2="40" y2="140" stroke="black" stroke-width="1" stroke-dasharray="4 4" />
-                <rect x="50" y="90" width="15" height="20" stroke="black" stroke-width="1.5" fill="white" />
-                <rect x="20" y="150" width="18" height="45" stroke="black" stroke-width="3" fill="white" />
-                <rect x="42" y="150" width="18" height="45" stroke="black" stroke-width="3" fill="white" />
-                <rect class="foot-tap" x="42" y="195" width="22" height="8" rx="3" stroke="black" stroke-width="3"
-                    fill="white" />
-                <rect x="16" y="195" width="22" height="8" rx="3" stroke="black" stroke-width="3" fill="white" />
-            </g>
-            <g id="b-mo-computer" transform="translate(280, 100)">
-                <rect width="120" height="150" rx="15" stroke="black" stroke-width="3" fill="white" />
-                <rect x="15" y="15" width="90" height="70" rx="8" stroke="black" stroke-width="2" fill="white" />
-                <g class="bmo-blink">
-                    <circle cx="45" cy="45" r="4" fill="black" />
-                    <circle cx="75" cy="45" r="4" fill="black" />
-                </g>
-                <g class="loading-spin">
-                    <circle cx="60" cy="50" r="25" stroke="black" stroke-width="2" fill="none"
-                        stroke-dasharray="15 10" />
-                </g>
-                <ellipse cx="60" cy="65" rx="8" ry="4" stroke="black" stroke-width="2" fill="white" />
-                <g transform="translate(20, 100)">
-                    <rect x="8" y="0" width="10" height="25" rx="2" stroke="black" stroke-width="2" fill="white" />
-                    <rect x="0" y="8" width="25" height="10" rx="2" stroke="black" stroke-width="2" fill="white" />
-                </g>
-                <circle cx="85" cy="105" r="6" stroke="black" stroke-width="2" fill="white" />
-                <circle cx="100" cy="115" r="6" stroke="black" stroke-width="2" fill="white" />
-                <g transform="translate(55, 130)">
-                    <line x1="0" y1="0" x2="20" y2="0" stroke="black" stroke-width="1.5" />
-                    <line x1="0" y1="5" x2="20" y2="5" stroke="black" stroke-width="1.5" />
-                    <line x1="0" y1="10" x2="20" y2="10" stroke="black" stroke-width="1.5" />
-                </g>
-                <rect x="25" y="150" width="12" height="15" rx="3" stroke="black" stroke-width="2" fill="white" />
-                <rect x="83" y="150" width="12" height="15" rx="3" stroke="black" stroke-width="2" fill="white" />
-            </g>
-        </svg>
+    <!-- Enter Gate -->
+    <div class="enter-gate hidden" id="enterGate">
+        <button class="enter-btn" id="enterBtn">ENTER</button>
+    </div>
 
-        <div class="max-w-md mx-auto space-y-8">
-            <div class="space-y-4">
-                <h1 class="text-4xl font-bold serif">We are still setting up.</h1>
-                <p class="text-lg opacity-70">Want to play a game while you wait? 🎮</p>
-                <button onclick="startGame()"
-                    class="btn-pill text-xl uppercase tracking-widest w-full hover:scale-105 transition-transform">
-                    Start Game
-                </button>
-            </div>
+    <!-- Menu Button -->
+    <button class="menu-btn" id="menuBtn">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
 
-            <div class="pt-8 border-t-2 border-black space-y-4">
-                <p class="text-sm font-bold uppercase tracking-tight">Get notified when B-Mi is live</p>
-                <form onsubmit="handleEmailSubmit(event)" class="flex flex-col sm:flex-row gap-3">
-                    <input type="email" placeholder="Enter your email" required class="input-pill text-sm">
-                    <button type="submit" class="btn-pill text-sm whitespace-nowrap">Notify Me</button>
-                </form>
-            </div>
+    <!-- Menu Overlay -->
+    <nav class="menu" id="menu">
+        <a data-section="projects">PROJECTS</a>
+        <a data-section="services">SERVICES</a>
+        <a data-section="clients">CLIENTS</a>
+        <a data-section="shop">SHOP</a>
+        <a data-section="contact">CONTACT</a>
+    </nav>
+
+    <!-- Projects Overlay -->
+    <div class="overlay" id="projects">
+        <button class="overlay-close">✕ CLOSE</button>
+        <h2>PROJECTS</h2>
+        <div class="overlay-content">
+            <p>Here you would show your projects in a gallery format.</p>
+        </div>
+        <div class="gallery-nav">
+            <button>←</button>
+            <span>1 / 5</span>
+            <button>→</button>
         </div>
     </div>
 
-    <!-- 3a. Game Stage - Pac-Man (Desktop) -->
-    <div id="game-stage-pacman"
-        class="screen-container flex-col items-center justify-center space-y-8 w-full max-w-6xl">
-        <div
-            class="flex flex-col lg:flex-row gap-12 items-stretch bg-white p-8 border-2 border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
-            <div class="relative flex-grow flex items-center justify-center bg-gray-50 p-4 border border-black">
-                <canvas id="pacmanCanvas" width="400" height="400"></canvas>
-                <div id="game-overlay" class="absolute inset-0 flex flex-col items-center justify-center hidden">
-                    <h2 id="overlay-text" class="text-4xl font-bold mb-6 serif">GAME OVER</h2>
-                    <p id="overlay-message" class="text-sm opacity-70 mb-6 max-w-xs text-center"></p>
-                    <div class="flex gap-4">
-                        <button onclick="resetPacman()" class="btn-pill">TRY AGAIN</button>
-                        <button onclick="returnToWaiting()" class="btn-pill bg-black text-white">BACK</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="w-full lg:w-80 flex flex-col justify-between">
-                <div class="space-y-6">
-                    <div class="flex justify-between items-center border-b-2 border-black pb-4">
-                        <h3 class="text-2xl font-bold uppercase tracking-tighter serif">Legend</h3>
-                        <button onclick="returnToWaiting()" class="text-xs font-bold underline hover:no-underline">←
-                            Return</button>
-                    </div>
-                    <div class="space-y-5">
-                        <div class="flex items-start gap-4 p-3 border-2 border-black rounded-lg">
-                            <div
-                                class="w-6 h-6 mt-1 rounded-full border-2 border-black flex-shrink-0 flex items-center justify-center">
-                                <div class="w-2 h-2 bg-black rounded-full"></div>
-                            </div>
-                            <div>
-                                <p class="font-bold text-sm uppercase">Wegovy Abnehmpillen</p>
-                                <p class="text-xs opacity-60 mt-1">Quick fix weight loss pills. Collect for points!</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start gap-4 p-3 border-2 border-black rounded-lg">
-                            <div class="w-8 h-8 flex-shrink-0">
-                                <svg viewBox="0 0 40 45" width="32" height="36">
-                                    <path
-                                        d="M8 20 Q8 5 20 5 Q32 5 32 20 L32 38 Q29 35 26 38 Q23 35 20 38 Q17 35 14 38 Q11 35 8 38 Z"
-                                        stroke="black" stroke-width="2" fill="white" />
-                                    <rect x="11" y="16" width="6" height="5" rx="1" stroke="black" stroke-width="1.5"
-                                        fill="white" />
-                                    <rect x="23" y="16" width="6" height="5" rx="1" stroke="black" stroke-width="1.5"
-                                        fill="white" />
-                                    <line x1="17" y1="18" x2="23" y2="18" stroke="black" stroke-width="1.5" />
-                                    <circle cx="14" cy="18" r="1.5" fill="black" />
-                                    <circle cx="26" cy="18" r="1.5" fill="black" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="font-bold text-sm uppercase">Dr. Koplins</p>
-                                <p class="text-xs opacity-60 mt-1">Holistic coaches trying to teach you!</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="pt-6 border-t-2 border-black">
-                        <div class="flex justify-between items-end">
-                            <span class="text-xs font-bold uppercase opacity-50">Score</span>
-                            <span id="score-val-pacman" class="text-5xl font-bold serif">0</span>
-                        </div>
-                    </div>
-                    <div class="text-xs opacity-50 text-center">Use Arrow Keys or WASD to move</div>
-                </div>
-                <div class="mt-8 pt-6 border-t-2 border-black space-y-3">
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-center">B-Mi is coming soon</p>
-                    <form onsubmit="handleEmailSubmit(event)" class="flex flex-col gap-2">
-                        <input type="email" placeholder="E-mail" required class="input-pill text-xs py-2">
-                        <button type="submit" class="btn-pill text-[10px] uppercase py-2">Notify Me</button>
-                    </form>
-                </div>
-            </div>
+    <!-- Services Overlay -->
+    <div class="overlay" id="services">
+        <button class="overlay-close">✕ CLOSE</button>
+        <h2>SERVICES</h2>
+        <div class="overlay-content">
+            <p>Strategy • Design • Development • Marketing</p>
         </div>
     </div>
 
-    <!-- 3b. Game Stage - Whack-a-Mole (Mobile) -->
-    <div id="game-stage-mole"
-        class="screen-container flex-col items-center justify-center space-y-6 w-full max-w-md px-4">
-        <div class="w-full bg-white p-6 border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold serif">Catch Dr. Koplin!</h3>
-                <button onclick="returnToWaiting()" class="text-xs font-bold underline">← Back</button>
-            </div>
-
-            <!-- Timer -->
-            <div class="timer-bar mb-4">
-                <div id="mole-timer" class="timer-fill" style="width: 100%"></div>
-            </div>
-
-            <!-- Score -->
-            <div class="flex justify-between items-center mb-6">
-                <span class="text-xs font-bold uppercase opacity-50">Score</span>
-                <span id="score-val-mole" class="text-3xl font-bold serif">0</span>
-            </div>
-
-            <!-- Mole Grid -->
-            <div id="mole-grid" class="mole-grid">
-                <!-- 9 holes generated by JS -->
-            </div>
-
-            <!-- Legend -->
-            <div class="mt-6 pt-4 border-t-2 border-black space-y-3">
-                <div class="flex items-center gap-3 text-xs">
-                    <span class="text-lg">🩺</span>
-                    <span><strong>Dr. Koplin</strong> = +10 pts (Tap!)</span>
-                </div>
-                <div class="flex items-center gap-3 text-xs">
-                    <span class="text-lg">💊</span>
-                    <span><strong>Wegovy Pill</strong> = -5 pts (Avoid!)</span>
-                </div>
-            </div>
-
-            <!-- Game Over Overlay -->
-            <div id="mole-overlay" class="absolute inset-0 flex-col items-center justify-center hidden rounded-lg">
-                <h2 id="mole-overlay-text" class="text-3xl font-bold mb-4 serif">Time's Up!</h2>
-                <p id="mole-overlay-score" class="text-lg mb-6"></p>
-                <div class="flex gap-3">
-                    <button onclick="resetMole()" class="btn-pill">PLAY AGAIN</button>
-                    <button onclick="returnToWaiting()" class="btn-pill bg-black text-white">BACK</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Email form -->
-        <div class="w-full pt-4 border-t-2 border-black space-y-3">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-center">B-Mi is coming soon</p>
-            <form onsubmit="handleEmailSubmit(event)" class="flex flex-col gap-2">
-                <input type="email" placeholder="E-mail" required class="input-pill text-xs py-2">
-                <button type="submit" class="btn-pill text-[10px] uppercase py-2">Notify Me</button>
-            </form>
+    <!-- Clients Overlay -->
+    <div class="overlay" id="clients">
+        <button class="overlay-close">✕ CLOSE</button>
+        <h2>CLIENTS</h2>
+        <div class="overlay-content">
+            <p>Brand A • Brand B • Brand C</p>
         </div>
     </div>
 
-    <!-- Success Modal for Email -->
-    <div id="success-modal" class="fixed inset-0 bg-white/90 z-[300] hidden items-center justify-center p-6">
-        <div
-            class="max-w-sm w-full border-4 border-black p-8 text-center bg-white space-y-6 shadow-[16px_16px_0px_0px_rgba(0,0,0,1)]">
-            <h2 class="text-3xl font-bold serif">You're on the list! 🎉</h2>
-            <p class="text-sm opacity-70">We'll reach out as soon as B-Mi is ready to help you on your holistic journey.
-            </p>
-            <button onclick="closeModal()" class="btn-pill w-full">GREAT</button>
+    <!-- Shop Overlay -->
+    <div class="overlay" id="shop">
+        <button class="overlay-close">✕ CLOSE</button>
+        <h2>SHOP</h2>
+        <div class="overlay-content">
+            <p>Merchandise coming soon...</p>
+        </div>
+    </div>
+
+    <!-- Contact Overlay -->
+    <div class="overlay" id="contact">
+        <button class="overlay-close">✕ CLOSE</button>
+        <h2>CONTACT</h2>
+        <div class="overlay-content">
+            <p>hello@yoursite.com</p>
         </div>
     </div>
 
     <script>
-        // ==================== DEVICE DETECTION ====================
-        function isMobile() {
-            return window.innerWidth < 1024 || 'ontouchstart' in window;
-        }
-
-        // ==================== GAME ROUTER ====================
-        function startGame() {
-            document.getElementById('waiting-stage').classList.remove('active');
-            if (isMobile()) {
-                document.getElementById('game-stage-mole').classList.add('active');
-                initMoleGame();
-            } else {
-                document.getElementById('game-stage-pacman').classList.add('active');
-                resetPacman();
-            }
-        }
-
-        function returnToWaiting() {
-            pacmanActive = false;
-            moleActive = false;
-            document.getElementById('game-stage-pacman').classList.remove('active');
-            document.getElementById('game-stage-mole').classList.remove('active');
-            document.getElementById('waiting-stage').classList.add('active');
-        }
-
-        // ==================== EMAIL HANDLER ====================
-        function handleEmailSubmit(e) {
-            e.preventDefault();
-            const email = e.target.querySelector('input[type="email"]').value;
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerText;
-
-            submitBtn.innerText = 'Sending...';
-            submitBtn.disabled = true;
-
-            fetch('https://script.google.com/macros/s/AKfycbzzhlQPxcpDscKTUSggtq9BkFvL6-JqHHbPzXnsRKWZY_oo92CcJQhDiKOJXZDWua0eIg/exec', {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email })
-            })
-                .then(() => {
-                    document.getElementById('success-modal').classList.remove('hidden');
-                    document.getElementById('success-modal').classList.add('flex');
-                    e.target.reset();
-                })
-                .catch(err => {
-                    alert('Something went wrong. Please try again.');
-                    console.error(err);
-                })
-                .finally(() => {
-                    submitBtn.innerText = originalText;
-                    submitBtn.disabled = false;
-                });
-        }
-
-        function closeModal() {
-            document.getElementById('success-modal').classList.add('hidden');
-            document.getElementById('success-modal').classList.remove('flex');
-        }
-
-        // ==================== WHACK-A-MOLE GAME ====================
-        let moleScore = 0;
-        let moleActive = false;
-        let moleTimer = 30; // 30 seconds
-        let moleInterval;
-        let spawnInterval;
-        const moleGrid = document.getElementById('mole-grid');
-
-        function initMoleGame() {
-            // Create 9 holes
-            moleGrid.innerHTML = '';
-            for (let i = 0; i < 9; i++) {
-                const hole = document.createElement('div');
-                hole.className = 'mole-hole';
-                hole.dataset.index = i;
-                hole.innerHTML = '<div class="character"></div>';
-                hole.addEventListener('click', handleMoleClick);
-                hole.addEventListener('touchstart', handleMoleClick, { passive: true });
-                moleGrid.appendChild(hole);
-            }
-            resetMole();
-        }
-
-        function resetMole() {
-            moleScore = 0;
-            moleTimer = 30;
-            moleActive = true;
-            document.getElementById('score-val-mole').innerText = moleScore;
-            document.getElementById('mole-timer').style.width = '100%';
-            document.getElementById('mole-overlay').classList.add('hidden');
-            document.getElementById('mole-overlay').classList.remove('flex');
-
-            // Clear all holes
-            document.querySelectorAll('.mole-hole').forEach(hole => {
-                hole.classList.remove('active');
-                hole.dataset.type = '';
-            });
-
-            // Start timer
-            if (moleInterval) clearInterval(moleInterval);
-            moleInterval = setInterval(() => {
-                moleTimer -= 0.1;
-                document.getElementById('mole-timer').style.width = (moleTimer / 30 * 100) + '%';
-                if (moleTimer <= 0) {
-                    endMoleGame();
-                }
-            }, 100);
-
-            // Start spawning
-            if (spawnInterval) clearInterval(spawnInterval);
-            spawnMole();
-            spawnInterval = setInterval(spawnMole, 800);
-        }
-
-        function spawnMole() {
-            if (!moleActive) return;
-
-            // Pick random inactive hole
-            const holes = Array.from(document.querySelectorAll('.mole-hole:not(.active)'));
-            if (holes.length === 0) return;
-
-            const hole = holes[Math.floor(Math.random() * holes.length)];
-
-            // 70% Dr. Koplin, 30% Pill
-            const isDrKoplin = Math.random() < 0.7;
-            hole.dataset.type = isDrKoplin ? 'koplin' : 'pill';
-
-            const character = hole.querySelector('.character');
-            if (isDrKoplin) {
-                character.innerHTML = '🩺';
-            } else {
-                character.innerHTML = '💊';
-            }
-
-            hole.classList.add('active');
-
-            // Hide after random time
+        // Loading sequence
+        setTimeout(() => {
+            document.getElementById('loading').classList.add('hidden');
             setTimeout(() => {
-                hole.classList.remove('active');
-                hole.dataset.type = '';
-            }, 600 + Math.random() * 400);
-        }
+                document.getElementById('enterGate').classList.remove('hidden');
+            }, 500);
+        }, 2000);
 
-        function handleMoleClick(e) {
-            if (!moleActive) return;
-
-            const hole = e.currentTarget;
-            if (!hole.classList.contains('active')) return;
-
-            const type = hole.dataset.type;
-            const character = hole.querySelector('.character');
-
-            let points = 0;
-            if (type === 'koplin') {
-                points = 10;
-                moleScore += 10;
-            } else if (type === 'pill') {
-                points = -5;
-                moleScore = Math.max(0, moleScore - 5);
-            }
-
-            // Show score flash
-            showScoreFlash(hole, points);
-
-            // Animate hit
-            character.classList.add('hit');
-            setTimeout(() => character.classList.remove('hit'), 300);
-
-            // Hide immediately
-            hole.classList.remove('active');
-            hole.dataset.type = '';
-
-            document.getElementById('score-val-mole').innerText = moleScore;
-        }
-
-        function showScoreFlash(hole, points) {
-            const flash = document.createElement('div');
-            flash.className = 'score-flash ' + (points > 0 ? 'positive' : 'negative');
-            flash.innerText = (points > 0 ? '+' : '') + points;
-            hole.appendChild(flash);
-            setTimeout(() => flash.remove(), 600);
-        }
-
-        function endMoleGame() {
-            moleActive = false;
-            clearInterval(moleInterval);
-            clearInterval(spawnInterval);
-
-            document.getElementById('mole-overlay-text').innerText = moleScore >= 100 ? 'Amazing! 🎉' : "Time's Up!";
-            document.getElementById('mole-overlay-score').innerText = 'Final Score: ' + moleScore;
-            document.getElementById('mole-overlay').classList.remove('hidden');
-            document.getElementById('mole-overlay').classList.add('flex');
-        }
-
-        // ==================== PAC-MAN GAME ====================
-        const canvas = document.getElementById('pacmanCanvas');
-        const ctx = canvas.getContext('2d');
-        const scoreElPacman = document.getElementById('score-val-pacman');
-        const overlay = document.getElementById('game-overlay');
-        const overlayText = document.getElementById('overlay-text');
-        const overlayMessage = document.getElementById('overlay-message');
-
-        const tileSize = 20;
-        const rows = 20;
-        const cols = 20;
-        let pacmanScore = 0;
-        let pacmanActive = false;
-
-        const initialMap = [
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1],
-            [1, 2, 1, 1, 2, 1, 1, 1, 2, 1, 1, 2, 1, 1, 1, 2, 1, 1, 2, 1],
-            [1, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 1],
-            [1, 2, 2, 2, 2, 1, 2, 1, 1, 0, 1, 1, 2, 1, 2, 2, 2, 2, 2, 1],
-            [1, 1, 1, 1, 2, 1, 2, 1, 0, 0, 0, 1, 2, 1, 2, 1, 1, 1, 1, 1],
-            [0, 0, 0, 1, 2, 1, 2, 1, 1, 1, 1, 1, 2, 1, 2, 1, 0, 0, 0, 0],
-            [1, 1, 1, 1, 2, 1, 2, 2, 2, 2, 2, 2, 2, 1, 2, 1, 1, 1, 1, 1],
-            [1, 2, 2, 2, 2, 2, 2, 1, 1, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 1],
-            [1, 2, 1, 1, 1, 1, 2, 1, 0, 0, 0, 1, 2, 1, 1, 1, 1, 1, 2, 1],
-            [1, 2, 2, 2, 2, 1, 2, 1, 1, 1, 1, 1, 2, 1, 2, 2, 2, 2, 2, 1],
-            [1, 1, 1, 1, 2, 1, 2, 2, 2, 0, 2, 2, 2, 1, 2, 1, 1, 1, 1, 1],
-            [1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 1],
-            [1, 2, 1, 1, 1, 1, 2, 2, 2, 1, 2, 2, 2, 1, 1, 1, 1, 1, 2, 1],
-            [1, 2, 2, 2, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 2, 2, 2, 2, 1],
-            [1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1],
-            [1, 2, 2, 2, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 2, 2, 2, 2, 1],
-            [1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1],
-            [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        ];
-        let gameMap = [];
-        let pacman = { x: 1, y: 1, dir: 'right', nextDir: 'right', mouthOpen: 0, mouthDir: 1 };
-        let ghosts = [];
-
-        window.addEventListener('keydown', (e) => {
-            const keyMap = {
-                'ArrowUp': 'up', 'w': 'up', 'W': 'up',
-                'ArrowDown': 'down', 's': 'down', 'S': 'down',
-                'ArrowLeft': 'left', 'a': 'left', 'A': 'left',
-                'ArrowRight': 'right', 'd': 'right', 'D': 'right'
-            };
-            if (keyMap[e.key]) {
-                e.preventDefault();
-                pacman.nextDir = keyMap[e.key];
-            }
+        // Enter button
+        document.getElementById('enterBtn').addEventListener('click', () => {
+            document.getElementById('enterGate').classList.add('hidden');
         });
 
-        function resetPacman() {
-            pacmanScore = 0;
-            scoreElPacman.innerText = pacmanScore;
-            gameMap = initialMap.map(row => [...row]);
-            pacman = { x: 1, y: 1, dir: 'right', nextDir: 'right', mouthOpen: 0, mouthDir: 1 };
-            ghosts = [
-                { x: 9, y: 8, dir: 'up' },
-                { x: 10, y: 8, dir: 'down' },
-                { x: 9, y: 10, dir: 'left' },
-                { x: 10, y: 10, dir: 'right' }
-            ];
-            pacmanActive = true;
-            overlay.classList.add('hidden');
-            lastTime = performance.now();
-            requestAnimationFrame(pacmanLoop);
-        }
+        // Menu toggle
+        const menuBtn = document.getElementById('menuBtn');
+        const menu = document.getElementById('menu');
 
-        let lastTime = 0;
-        const tickRate = 180;
+        menuBtn.addEventListener('click', () => {
+            menuBtn.classList.toggle('active');
+            menu.classList.toggle('open');
+        });
 
-        function pacmanLoop(timestamp) {
-            if (!pacmanActive) return;
-            if (timestamp - lastTime > tickRate) {
-                updatePacman();
-                lastTime = timestamp;
-            }
-            drawPacman();
-            requestAnimationFrame(pacmanLoop);
-        }
-
-        function updatePacman() {
-            moveEntity(pacman, true);
-            if (gameMap[pacman.y] && gameMap[pacman.y][pacman.x] === 2) {
-                gameMap[pacman.y][pacman.x] = 0;
-                pacmanScore += 10;
-                scoreElPacman.innerText = pacmanScore;
-            }
-            ghosts.forEach(ghost => moveEntity(ghost, false));
-            ghosts.forEach(ghost => {
-                if (ghost.x === pacman.x && ghost.y === pacman.y) endPacmanGame(false);
+        // Menu navigation
+        const menuLinks = document.querySelectorAll('.menu a[data-section]');
+        menuLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                const section = link.getAttribute('data-section');
+                
+                // Close menu
+                menuBtn.classList.remove('active');
+                menu.classList.remove('open');
+                
+                // Open overlay
+                setTimeout(() => {
+                    document.getElementById(section).classList.add('active');
+                }, 300);
             });
-            if (gameMap.flat().filter(t => t === 2).length === 0) endPacmanGame(true);
-        }
+        });
 
-        function moveEntity(entity, isPlayer) {
-            let tryDir = isPlayer ? entity.nextDir : entity.dir;
-            if (canMove(entity.x, entity.y, tryDir)) {
-                applyMove(entity, tryDir);
-            } else if (canMove(entity.x, entity.y, entity.dir)) {
-                applyMove(entity, entity.dir);
-            } else if (!isPlayer) {
-                const dirs = ['up', 'down', 'left', 'right'].filter(d => canMove(entity.x, entity.y, d));
-                if (dirs.length > 0) {
-                    if (Math.random() < 0.6) {
-                        dirs.sort((a, b) => getDistAfterMove(entity.x, entity.y, a) - getDistAfterMove(entity.x, entity.y, b));
-                    }
-                    entity.dir = dirs[0];
-                }
-            }
-        }
-
-        function getDistAfterMove(x, y, dir) {
-            let nx = x, ny = y;
-            if (dir === 'up') ny--; else if (dir === 'down') ny++; else if (dir === 'left') nx--; else if (dir === 'right') nx++;
-            return Math.abs(nx - pacman.x) + Math.abs(ny - pacman.y);
-        }
-
-        function canMove(x, y, dir) {
-            let nx = x, ny = y;
-            if (dir === 'up') ny--; else if (dir === 'down') ny++; else if (dir === 'left') nx--; else if (dir === 'right') nx++;
-            return gameMap[ny] && gameMap[ny][nx] !== 1 && gameMap[ny][nx] !== undefined;
-        }
-
-        function applyMove(entity, dir) {
-            if (dir === 'up') entity.y--; else if (dir === 'down') entity.y++; else if (dir === 'left') entity.x--; else if (dir === 'right') entity.x++;
-            entity.dir = dir;
-        }
-
-        function drawPacman() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
-                    const tile = gameMap[r][c];
-                    const x = c * tileSize, y = r * tileSize;
-                    if (tile === 1) {
-                        ctx.strokeStyle = 'black'; ctx.lineWidth = 2;
-                        ctx.strokeRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
-                    } else if (tile === 2) {
-                        ctx.fillStyle = 'black';
-                        ctx.beginPath(); ctx.arc(x + tileSize / 2, y + tileSize / 2, 3, 0, Math.PI * 2); ctx.fill();
-                    }
-                }
-            }
-
-            const px = pacman.x * tileSize + tileSize / 2, py = pacman.y * tileSize + tileSize / 2;
-            pacman.mouthOpen += 0.3 * pacman.mouthDir;
-            if (pacman.mouthOpen > 0.4 || pacman.mouthOpen < 0) pacman.mouthDir *= -1;
-
-            let rotation = 0;
-            if (pacman.dir === 'right') rotation = 0;
-            else if (pacman.dir === 'left') rotation = Math.PI;
-            else if (pacman.dir === 'down') rotation = Math.PI / 2;
-            else if (pacman.dir === 'up') rotation = -Math.PI / 2;
-
-            ctx.save(); ctx.translate(px, py); ctx.rotate(rotation);
-            ctx.strokeStyle = 'black'; ctx.fillStyle = 'white'; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.arc(0, 0, 8, pacman.mouthOpen, Math.PI * 2 - pacman.mouthOpen);
-            ctx.lineTo(0, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
-            ctx.fillStyle = 'black'; ctx.beginPath(); ctx.arc(0, -4, 1.5, 0, Math.PI * 2); ctx.fill();
-            ctx.restore();
-
-            ghosts.forEach(g => {
-                const gx = g.x * tileSize + tileSize / 2, gy = g.y * tileSize + tileSize / 2;
-                ctx.strokeStyle = 'black'; ctx.fillStyle = 'white'; ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.arc(gx, gy - 2, 7, Math.PI, 0, false);
-                ctx.lineTo(gx + 7, gy + 6);
-                ctx.quadraticCurveTo(gx + 5, gy + 3, gx + 3, gy + 6);
-                ctx.quadraticCurveTo(gx, gy + 3, gx - 3, gy + 6);
-                ctx.quadraticCurveTo(gx - 5, gy + 3, gx - 7, gy + 6);
-                ctx.lineTo(gx - 7, gy - 2); ctx.closePath(); ctx.fill(); ctx.stroke();
-                ctx.lineWidth = 1;
-                ctx.strokeRect(gx - 6, gy - 4, 4, 3); ctx.strokeRect(gx + 2, gy - 4, 4, 3);
-                ctx.beginPath(); ctx.moveTo(gx - 2, gy - 2.5); ctx.lineTo(gx + 2, gy - 2.5); ctx.stroke();
-                ctx.fillStyle = 'black';
-                ctx.beginPath(); ctx.arc(gx - 4, gy - 2.5, 1, 0, Math.PI * 2); ctx.arc(gx + 4, gy - 2.5, 1, 0, Math.PI * 2); ctx.fill();
+        // Close overlay buttons
+        const closeButtons = document.querySelectorAll('.overlay-close');
+        closeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                btn.closest('.overlay').classList.remove('active');
             });
-        }
+        });
 
-        function endPacmanGame(win) {
-            pacmanActive = false;
-            overlay.classList.remove('hidden');
-            if (win) {
-                overlayText.innerText = "HOLISTIC SUCCESS! 🎉";
-                overlayMessage.innerText = "You collected all the pills! But remember: Real weight loss comes from sustainable habits.";
-            } else {
-                overlayText.innerText = "LESSON LEARNED 🩺";
-                overlayMessage.innerText = "Dr. Koplin caught you! Time to learn about holistic approaches.";
+        // Close overlay on ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.overlay.active').forEach(overlay => {
+                    overlay.classList.remove('active');
+                });
             }
-        }
-
-        // Auto-hide logo after animation
-        setTimeout(() => {
-            document.getElementById('logo-intro').style.display = 'none';
-        }, 4000);
+        });
     </script>
 </body>
-
 </html>
