@@ -1,404 +1,2053 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minimal Interactive Site</title>
+    <title>Helferherz – Karte | Hannover List</title>
+    <meta name="description"
+        content="Interaktive Karte von Helferherz: Finde Helfer:innen und Senior:innen in Hannover-List.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        * {
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
+        }
+
+        :root {
+            --orange: #df9052;
+            --orange-light: #f5c89a;
+            --orange-dark: #c47530;
+            --blue: #5b9bd5;
+            --blue-light: #b4cae4;
+            --blue-dark: #3a7cbf;
+            --green: #7ec882;
+            --green-dark: #4da653;
+            --lavender: #b39ddb;
+            --bg-dark: #1a1a2e;
+            --bg-card: #ffffff;
+            --text-primary: #1a1a2e;
+            --text-secondary: #5a5a7a;
+            --radius: 16px;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.18);
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            overflow: hidden;
-            background: #000;
-            color: #fff;
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: linear-gradient(135deg, #fef3e8 0%, #e8f0fe 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
         }
 
-        /* Background scene (replaces 3D) */
-        #scene {
-            position: fixed;
-            inset: 0;
-            z-index: 0;
-            background: linear-gradient(45deg, #1a1a1a, #2d2d2d);
+        /* ── Header ─────────────────────────────────── */
+        .header {
+            background: linear-gradient(135deg, var(--orange) 0%, var(--orange-dark) 100%);
+            padding: 20px 32px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 4rem;
-            opacity: 0.3;
-        }
-
-        /* Loading screen */
-        .loading {
-            position: fixed;
-            inset: 0;
+            gap: 16px;
+            box-shadow: 0 4px 20px rgba(223, 144, 82, 0.35);
+            position: relative;
             z-index: 1000;
-            background: #000;
+        }
+
+        .header-logo {
+            width: 48px;
+            height: 48px;
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 1.6rem;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 0.85rem;
+            font-weight: 400;
+        }
+
+        /* ── Main Layout ────────────────────────────── */
+        .app {
+            display: flex;
+            height: calc(100vh - 88px);
+        }
+
+        /* ── Sidebar ────────────────────────────────── */
+        .sidebar {
+            width: 360px;
+            background: var(--bg-card);
+            border-right: 1px solid rgba(0, 0, 0, 0.06);
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.5s;
-        }
-
-        .loading.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .loading-bar {
-            width: 200px;
-            height: 4px;
-            background: #333;
-            margin-top: 20px;
             overflow: hidden;
         }
 
-        .loading-bar::after {
-            content: '';
-            display: block;
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .stats {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .stat-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            flex: 1;
+            justify-content: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: default;
+        }
+
+        .stat-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .stat-badge.helfer {
+            background: linear-gradient(135deg, #fff3e6, #ffe0c2);
+            color: var(--orange-dark);
+        }
+
+        .stat-badge.senioren {
+            background: linear-gradient(135deg, #e6f0ff, #c2d9f7);
+            color: var(--blue-dark);
+        }
+
+        .stat-badge.aktiv {
+            background: linear-gradient(135deg, #e6f9e6, #c2ecc4);
+            color: var(--green-dark);
+        }
+
+        .stat-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .stat-dot.orange {
+            background: var(--orange);
+        }
+
+        .stat-dot.blue {
+            background: var(--blue);
+        }
+
+        .stat-dot.green {
+            background: var(--green);
+        }
+
+        /* ── Filters ────────────────────────────────── */
+        .filters {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border: 2px solid rgba(0, 0, 0, 0.08);
+            border-radius: 100px;
+            background: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+        }
+
+        .filter-btn:hover {
+            border-color: rgba(0, 0, 0, 0.15);
+        }
+
+        .filter-btn.active-helfer {
+            background: var(--orange);
+            color: white;
+            border-color: var(--orange);
+        }
+
+        .filter-btn.active-senioren {
+            background: var(--blue);
+            color: white;
+            border-color: var(--blue);
+        }
+
+        .filter-btn.active-aktiv {
+            background: var(--green);
+            color: white;
+            border-color: var(--green);
+        }
+
+        /* ── Person List ────────────────────────────── */
+        .person-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .person-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .person-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .person-list::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.12);
+            border-radius: 3px;
+        }
+
+        .person-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            margin-bottom: 6px;
+        }
+
+        .person-card:hover {
+            background: rgba(0, 0, 0, 0.03);
+            transform: translateX(4px);
+        }
+
+        .person-card.active {
+            background: rgba(223, 144, 82, 0.08);
+            box-shadow: 0 2px 12px rgba(223, 144, 82, 0.15);
+        }
+
+        .person-avatar {
+            width: 44px;
+            height: 44px;
+            flex-shrink: 0;
+        }
+
+        .person-info h3 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .person-info p {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .person-role {
+            margin-left: auto;
+            padding: 4px 10px;
+            border-radius: 100px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+        }
+
+        .person-role.helfer {
+            background: #fff3e6;
+            color: var(--orange-dark);
+        }
+
+        .person-role.senior {
+            background: #e6f0ff;
+            color: var(--blue-dark);
+        }
+
+        .person-role.aktiv {
+            background: #e6f9e6;
+            color: var(--green-dark);
+        }
+
+        /* ── Map ────────────────────────────────────── */
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
             height: 100%;
-            background: #fff;
-            width: 0%;
-            animation: load 2s ease-out forwards;
         }
 
-        @keyframes load {
-            to { width: 100%; }
+        /* Custom popup */
+        .leaflet-popup-content-wrapper {
+            border-radius: 16px !important;
+            box-shadow: var(--shadow) !important;
+            padding: 0 !important;
+            overflow: hidden;
         }
 
-        /* Enter gate */
-        .enter-gate {
-            position: fixed;
-            inset: 0;
-            z-index: 999;
-            background: rgba(0,0,0,0.9);
+        .leaflet-popup-content {
+            margin: 0 !important;
+            min-width: 240px;
+        }
+
+        .leaflet-popup-tip {
+            box-shadow: none !important;
+        }
+
+        .popup-card {
+            padding: 20px;
+        }
+
+        .popup-header {
             display: flex;
             align-items: center;
-            justify-content: center;
-            transition: opacity 0.5s;
+            gap: 12px;
+            margin-bottom: 12px;
         }
 
-        .enter-gate.hidden {
-            opacity: 0;
-            pointer-events: none;
+        .popup-avatar {
+            width: 48px;
+            height: 48px;
         }
 
-        .enter-btn {
-            padding: 20px 60px;
-            font-size: 1.5rem;
-            background: transparent;
-            border: 2px solid #fff;
-            color: #fff;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .enter-btn:hover {
-            background: #fff;
-            color: #000;
-        }
-
-        /* Menu button */
-        .menu-btn {
-            position: fixed;
-            top: 30px;
-            right: 30px;
-            z-index: 100;
-            width: 40px;
-            height: 40px;
-            cursor: pointer;
-            background: transparent;
-            border: none;
-            padding: 0;
-        }
-
-        .menu-btn span {
-            display: block;
-            width: 100%;
-            height: 2px;
-            background: #fff;
-            margin: 8px 0;
-            transition: all 0.3s;
-        }
-
-        .menu-btn.active span:nth-child(1) {
-            transform: rotate(45deg) translate(9px, 9px);
-        }
-
-        .menu-btn.active span:nth-child(2) {
-            opacity: 0;
-        }
-
-        .menu-btn.active span:nth-child(3) {
-            transform: rotate(-45deg) translate(9px, -9px);
-        }
-
-        /* Full menu overlay */
-        .menu {
-            position: fixed;
-            top: 0;
-            right: -100%;
-            width: 100%;
-            height: 100vh;
-            z-index: 99;
-            background: rgba(0,0,0,0.95);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 30px;
-            transition: right 0.5s cubic-bezier(0.77, 0, 0.175, 1);
-        }
-
-        .menu.open {
-            right: 0;
-        }
-
-        .menu a {
-            font-size: 3rem;
-            color: #fff;
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.3s;
-            opacity: 0;
-            transform: translateX(50px);
-        }
-
-        .menu.open a {
-            opacity: 1;
-            transform: translateX(0);
-        }
-
-        .menu.open a:nth-child(1) { transition-delay: 0.1s; }
-        .menu.open a:nth-child(2) { transition-delay: 0.2s; }
-        .menu.open a:nth-child(3) { transition-delay: 0.3s; }
-        .menu.open a:nth-child(4) { transition-delay: 0.4s; }
-        .menu.open a:nth-child(5) { transition-delay: 0.5s; }
-
-        .menu a:hover {
-            transform: translateX(-10px);
-            color: #999;
-        }
-
-        /* Content overlays */
-        .overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 50;
-            background: rgba(0,0,0,0.9);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 60px;
-            transform: translateY(100%);
-            transition: transform 0.6s cubic-bezier(0.77, 0, 0.175, 1);
-        }
-
-        .overlay.active {
-            transform: translateY(0);
-        }
-
-        .overlay-close {
-            position: absolute;
-            top: 30px;
-            right: 30px;
-            background: transparent;
-            border: 2px solid #fff;
-            color: #fff;
-            padding: 10px 30px;
-            cursor: pointer;
+        .popup-name {
+            font-weight: 800;
             font-size: 1rem;
         }
 
-        .overlay-close:hover {
-            background: #fff;
-            color: #000;
+        .popup-type {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 3px 8px;
+            border-radius: 100px;
+            display: inline-block;
+            margin-top: 2px;
         }
 
-        .overlay h2 {
-            font-size: 3rem;
-            margin-bottom: 30px;
+        .popup-type.helfer {
+            background: #fff3e6;
+            color: var(--orange-dark);
         }
 
-        .overlay-content {
-            max-width: 800px;
-            text-align: center;
-            line-height: 1.6;
+        .popup-type.senior {
+            background: #e6f0ff;
+            color: var(--blue-dark);
         }
 
-        /* Gallery navigation */
-        .gallery-nav {
-            position: absolute;
-            bottom: 30px;
+        .popup-type.aktiv {
+            background: #e6f9e6;
+            color: var(--green-dark);
+        }
+
+        .popup-bio {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .popup-meta {
             display: flex;
-            gap: 20px;
+            flex-direction: column;
+            gap: 6px;
         }
 
-        .gallery-nav button {
-            background: transparent;
-            border: 1px solid #fff;
-            color: #fff;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-size: 1.5rem;
-        }
-
-        .gallery-nav button:hover {
-            background: #fff;
-            color: #000;
-        }
-
-        .gallery-nav span {
+        .popup-meta-item {
             display: flex;
             align-items: center;
-            padding: 0 20px;
+            gap: 8px;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+        }
+
+        .popup-meta-icon {
+            font-size: 1rem;
+        }
+
+        /* ── Legend ──────────────────────────────────── */
+        .legend {
+            position: absolute;
+            bottom: 28px;
+            right: 16px;
+            background: white;
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            box-shadow: var(--shadow);
+            z-index: 999;
+            min-width: 180px;
+        }
+
+        .legend h4 {
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 0.82rem;
+            font-weight: 500;
+        }
+
+        .legend-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .legend-heart {
+            width: 22px;
+            height: 22px;
+        }
+
+        /* ── Animations ─────────────────────────────── */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .person-card {
+            animation: fadeInUp 0.4s ease both;
+        }
+
+        .person-card:nth-child(1) {
+            animation-delay: 0.05s;
+        }
+
+        .person-card:nth-child(2) {
+            animation-delay: 0.10s;
+        }
+
+        .person-card:nth-child(3) {
+            animation-delay: 0.15s;
+        }
+
+        .person-card:nth-child(4) {
+            animation-delay: 0.20s;
+        }
+
+        .person-card:nth-child(5) {
+            animation-delay: 0.25s;
+        }
+
+        .person-card:nth-child(6) {
+            animation-delay: 0.30s;
+        }
+
+        .person-card:nth-child(7) {
+            animation-delay: 0.35s;
+        }
+
+        .person-card:nth-child(8) {
+            animation-delay: 0.40s;
+        }
+
+        /* ── Responsive ─────────────────────────────── */
+        @media (max-width: 768px) {
+            .app {
+                flex-direction: column-reverse;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: 45vh;
+            }
+
+            .map-container {
+                height: 55vh;
+            }
+
+            .legend {
+                bottom: 12px;
+                right: 12px;
+                padding: 12px 14px;
+            }
+        }
+
+        /* ── View Toggle ────────────────────────────── */
+        .view-toggle {
+            display: flex;
+            gap: 4px;
+            margin-left: auto;
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 10px;
+            padding: 4px;
+        }
+
+        .view-btn {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .view-btn.active {
+            background: white;
+            color: var(--orange-dark);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .view-btn:hover:not(.active) {
+            color: white;
+        }
+
+        /* ── Dashboard ──────────────────────────────── */
+        .dashboard {
+            display: none;
+            height: calc(100vh - 88px);
+            overflow-y: auto;
+            padding: 28px;
+            background: linear-gradient(135deg, #f8f5f1 0%, #eef2f9 100%);
+        }
+
+        .dashboard.visible {
+            display: block;
+        }
+
+        .app.hidden {
+            display: none;
+        }
+
+        .dash-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+            margin-bottom: 28px;
+        }
+
+        .kpi-card {
+            background: white;
+            border-radius: 16px;
+            padding: 22px 24px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow);
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+
+        .kpi-card.orange::before {
+            background: linear-gradient(90deg, var(--orange), var(--orange-light));
+        }
+
+        .kpi-card.blue::before {
+            background: linear-gradient(90deg, var(--blue), var(--blue-light));
+        }
+
+        .kpi-card.green::before {
+            background: linear-gradient(90deg, var(--green), #b8e6ba);
+        }
+
+        .kpi-card.purple::before {
+            background: linear-gradient(90deg, var(--lavender), #d1c4e9);
+        }
+
+        .kpi-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .kpi-value {
+            font-size: 2.2rem;
+            font-weight: 900;
+            line-height: 1.1;
+        }
+
+        .kpi-value.orange {
+            color: var(--orange-dark);
+        }
+
+        .kpi-value.blue {
+            color: var(--blue-dark);
+        }
+
+        .kpi-value.green {
+            color: var(--green-dark);
+        }
+
+        .kpi-value.purple {
+            color: #7e57c2;
+        }
+
+        .kpi-sub {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .kpi-trend {
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-top: 6px;
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 100px;
+        }
+
+        .kpi-trend.up {
+            background: #e6f9e6;
+            color: var(--green-dark);
+        }
+
+        .kpi-trend.down {
+            background: #fde8e8;
+            color: #c0392b;
+        }
+
+        .dash-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            margin-bottom: 22px;
+        }
+
+        .dash-section h3 {
+            font-size: 0.85rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 18px;
+        }
+
+        /* Bar chart */
+        .bar-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .bar-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .bar-label {
+            width: 120px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .bar-track {
+            flex: 1;
+            height: 28px;
+            background: #f0f0f5;
+            border-radius: 14px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 14px;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            padding-left: 12px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .bar-fill.orange {
+            background: linear-gradient(90deg, var(--orange), var(--orange-light));
+        }
+
+        .bar-fill.blue {
+            background: linear-gradient(90deg, var(--blue), var(--blue-light));
+        }
+
+        .bar-fill.green {
+            background: linear-gradient(90deg, var(--green), #b8e6ba);
+        }
+
+        /* Table */
+        .dash-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .dash-table thead th {
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-secondary);
+            padding: 10px 14px;
+            text-align: left;
+            border-bottom: 2px solid #eee;
+        }
+
+        .dash-table tbody td {
+            padding: 12px 14px;
+            font-size: 0.82rem;
+            border-bottom: 1px solid #f5f5f5;
+            vertical-align: middle;
+        }
+
+        .dash-table tbody tr:hover {
+            background: rgba(223, 144, 82, 0.04);
+        }
+
+        .dash-table .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        .dash-table .status-dot.aktiv {
+            background: var(--green);
+        }
+
+        .dash-table .status-dot.wartend {
+            background: #f0c040;
+        }
+
+        .dash-table .status-dot.pausiert {
+            background: #ccc;
+        }
+
+        .dash-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 22px;
+            margin-bottom: 22px;
+        }
+
+        @media (max-width: 900px) {
+            .dash-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ── Person Detail Panel ────────────────────── */
+        .detail-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.35);
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .detail-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .detail-panel {
+            position: fixed;
+            top: 0;
+            right: -520px;
+            width: 500px;
+            max-width: 90vw;
+            height: 100vh;
+            background: white;
+            z-index: 2001;
+            box-shadow: -8px 0 40px rgba(0, 0, 0, 0.15);
+            transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+        }
+
+        .detail-panel.open {
+            right: 0;
+        }
+
+        .detail-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 50%;
+            background: #f0f0f5;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            z-index: 1;
+        }
+
+        .detail-close:hover {
+            background: #e0e0e8;
+        }
+
+        .detail-hero {
+            padding: 32px 28px 20px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            border-bottom: 1px solid #f0f0f5;
+        }
+
+        .detail-hero-avatar {
+            width: 64px;
+            height: 64px;
+        }
+
+        .detail-hero-name {
+            font-size: 1.3rem;
+            font-weight: 900;
+        }
+
+        .detail-hero-role {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 3px 10px;
+            border-radius: 100px;
+            display: inline-block;
+            margin-top: 4px;
+        }
+
+        .detail-hero-role.helfer {
+            background: #fff3e6;
+            color: var(--orange-dark);
+        }
+
+        .detail-hero-role.senior {
+            background: #e6f0ff;
+            color: var(--blue-dark);
+        }
+
+        .detail-hero-role.aktiv {
+            background: #e6f9e6;
+            color: var(--green-dark);
+        }
+
+        .detail-body {
+            padding: 24px 28px;
+        }
+
+        .detail-section {
+            margin-bottom: 24px;
+        }
+
+        .detail-section h4 {
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .detail-field {
+            background: #f8f8fb;
+            border-radius: 12px;
+            padding: 12px 14px;
+        }
+
+        .detail-field-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .detail-field-value {
+            font-size: 0.88rem;
+            font-weight: 600;
+        }
+
+        .cal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .cal-header span {
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .cal-nav {
+            border: none;
+            background: #f0f0f5;
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .cal-nav:hover {
+            background: #e0e0e8;
+        }
+
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            text-align: center;
+        }
+
+        .cal-day-label {
+            font-size: 0.6rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            padding: 4px 0;
+        }
+
+        .cal-day {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .cal-day.today {
+            font-weight: 800;
+            color: var(--text-primary);
+            background: #f0f0f5;
+        }
+
+        .cal-day.visit {
+            background: var(--orange-light);
+            color: var(--orange-dark);
+            font-weight: 700;
+        }
+
+        .cal-day.visit-blue {
+            background: var(--blue-light);
+            color: var(--blue-dark);
+            font-weight: 700;
+        }
+
+        .cal-day.empty {
+            visibility: hidden;
+        }
+
+        .cal-legend {
+            display: flex;
+            gap: 14px;
+            margin-top: 10px;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        .cal-legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 4px;
+            vertical-align: middle;
+        }
+
+        .visit-log {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .visit-entry {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            background: #f8f8fb;
+            border-radius: 12px;
+            font-size: 0.82rem;
+        }
+
+        .visit-date {
+            font-weight: 700;
+            white-space: nowrap;
+            min-width: 70px;
+        }
+
+        .visit-note {
+            color: var(--text-secondary);
+        }
+
+        .visit-type-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* Weekly schedule */
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: 60px repeat(7, 1fr);
+            gap: 3px;
+        }
+
+        .schedule-header {
+            font-size: 0.6rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            text-align: center;
+            padding: 6px 2px;
+        }
+
+        .schedule-time {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+        }
+
+        .schedule-cell {
+            height: 28px;
+            border-radius: 6px;
+            background: #f5f5f8;
+        }
+
+        .schedule-cell.filled-helfer {
+            background: linear-gradient(135deg, var(--orange-light), #f5c89a);
+            border: 1px solid var(--orange);
+        }
+
+        .schedule-cell.filled-senior {
+            background: linear-gradient(135deg, var(--blue-light), #a8c8e8);
+            border: 1px solid var(--blue);
+        }
+
+        .schedule-cell.filled-aktiv {
+            background: linear-gradient(135deg, #c8eeca, #b8e6ba);
+            border: 1px solid var(--green);
         }
     </style>
 </head>
+
 <body>
-    <!-- Background Scene -->
-    <div id="scene">
-        YOUR LOGO
-    </div>
 
-    <!-- Loading Screen -->
-    <div class="loading" id="loading">
-        <div>LOADING...</div>
-        <div class="loading-bar"></div>
-    </div>
-
-    <!-- Enter Gate -->
-    <div class="enter-gate hidden" id="enterGate">
-        <button class="enter-btn" id="enterBtn">ENTER</button>
-    </div>
-
-    <!-- Menu Button -->
-    <button class="menu-btn" id="menuBtn">
-        <span></span>
-        <span></span>
-        <span></span>
-    </button>
-
-    <!-- Menu Overlay -->
-    <nav class="menu" id="menu">
-        <a data-section="projects">PROJECTS</a>
-        <a data-section="services">SERVICES</a>
-        <a data-section="clients">CLIENTS</a>
-        <a data-section="shop">SHOP</a>
-        <a data-section="contact">CONTACT</a>
-    </nav>
-
-    <!-- Projects Overlay -->
-    <div class="overlay" id="projects">
-        <button class="overlay-close">✕ CLOSE</button>
-        <h2>PROJECTS</h2>
-        <div class="overlay-content">
-            <p>Here you would show your projects in a gallery format.</p>
+    <div class="header">
+        <svg class="header-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <path
+                d="M50 88 C25 65, 5 50, 5 30 C5 15, 18 5, 32 5 C40 5, 46 10, 50 16 C54 10, 60 5, 68 5 C82 5, 95 15, 95 30 C95 50, 75 65, 50 88Z"
+                fill="var(--orange)" stroke="#222" stroke-width="3" />
+            <path
+                d="M38 72 C28 58, 18 50, 18 38 C18 30, 25 24, 31 24 C34 24, 37 26, 38 28 C39 26, 42 24, 45 24 C51 24, 58 30, 58 38 C58 50, 48 58, 38 72Z"
+                fill="var(--blue)" stroke="#222" stroke-width="2" opacity="0.9" />
+            <path
+                d="M62 68 C54 58, 46 52, 46 42 C46 36, 51 31, 56 31 C58 31, 61 33, 62 35 C63 33, 66 31, 68 31 C73 31, 78 36, 78 42 C78 52, 70 58, 62 68Z"
+                fill="var(--green)" stroke="#222" stroke-width="2" opacity="0.85" />
+        </svg>
+        <div>
+            <h1>Helferherz Karte</h1>
+            <p>Helfer:innen &amp; Senior:innen in Hannover-List</p>
         </div>
-        <div class="gallery-nav">
-            <button>←</button>
-            <span>1 / 5</span>
-            <button>→</button>
+        <div class="view-toggle">
+            <button class="view-btn active" id="btnKarte" onclick="switchView('karte')">🗺️ Karte</button>
+            <button class="view-btn" id="btnDashboard" onclick="switchView('dashboard')">📊 Dashboard</button>
         </div>
     </div>
 
-    <!-- Services Overlay -->
-    <div class="overlay" id="services">
-        <button class="overlay-close">✕ CLOSE</button>
-        <h2>SERVICES</h2>
-        <div class="overlay-content">
-            <p>Strategy • Design • Development • Marketing</p>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="stats" id="stats"></div>
+                <div class="filters" id="filters"></div>
+            </div>
+            <div class="person-list" id="personList"></div>
+        </aside>
+
+        <div class="map-container">
+            <div id="map"></div>
+            <div class="legend">
+                <h4>Legende</h4>
+                <div class="legend-item">
+                    <svg class="legend-heart" viewBox="0 0 100 100">
+                        <path
+                            d="M50 88C25 65 5 50 5 30 5 15 18 5 32 5c8 0 14 5 18 11C54 10 60 5 68 5c14 0 27 10 27 25 0 20-20 35-45 58z"
+                            fill="#df9052" stroke="#222" stroke-width="4" />
+                    </svg>
+                    Helfer:in
+                </div>
+                <div class="legend-item">
+                    <svg class="legend-heart" viewBox="0 0 100 100">
+                        <path
+                            d="M50 88C25 65 5 50 5 30 5 15 18 5 32 5c8 0 14 5 18 11C54 10 60 5 68 5c14 0 27 10 27 25 0 20-20 35-45 58z"
+                            fill="#5b9bd5" stroke="#222" stroke-width="4" />
+                    </svg>
+                    Senior:in
+                </div>
+                <div class="legend-item">
+                    <svg class="legend-heart" viewBox="0 0 100 100">
+                        <path
+                            d="M50 88C25 65 5 50 5 30 5 15 18 5 32 5c8 0 14 5 18 11C54 10 60 5 68 5c14 0 27 10 27 25 0 20-20 35-45 58z"
+                            fill="#7ec882" stroke="#222" stroke-width="4" />
+                    </svg>
+                    Aktive Helfer:in
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Clients Overlay -->
-    <div class="overlay" id="clients">
-        <button class="overlay-close">✕ CLOSE</button>
-        <h2>CLIENTS</h2>
-        <div class="overlay-content">
-            <p>Brand A • Brand B • Brand C</p>
+    <!-- Dashboard View -->
+    <div class="dashboard" id="dashboardView">
+        <div class="dash-grid" id="kpiCards"></div>
+        <div class="dash-row">
+            <div class="dash-section">
+                <h3>📊 Verteilung</h3>
+                <div class="bar-chart" id="barChart"></div>
+            </div>
+            <div class="dash-section">
+                <h3>🤝 Matching-Status</h3>
+                <div class="bar-chart" id="matchChart"></div>
+            </div>
+        </div>
+        <div class="dash-section">
+            <h3>👥 Alle Personen</h3>
+            <table class="dash-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Rolle</th>
+                        <th>Sprachen</th>
+                        <th>Verfügbarkeit</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="dashTable"></tbody>
+            </table>
         </div>
     </div>
 
-    <!-- Shop Overlay -->
-    <div class="overlay" id="shop">
-        <button class="overlay-close">✕ CLOSE</button>
-        <h2>SHOP</h2>
-        <div class="overlay-content">
-            <p>Merchandise coming soon...</p>
-        </div>
-    </div>
-
-    <!-- Contact Overlay -->
-    <div class="overlay" id="contact">
-        <button class="overlay-close">✕ CLOSE</button>
-        <h2>CONTACT</h2>
-        <div class="overlay-content">
-            <p>hello@yoursite.com</p>
-        </div>
+    <!-- Person Detail Panel -->
+    <div class="detail-overlay" id="detailOverlay" onclick="closeDetail()"></div>
+    <div class="detail-panel" id="detailPanel">
+        <button class="detail-close" onclick="closeDetail()">✕</button>
+        <div id="detailContent"></div>
     </div>
 
     <script>
-        // Loading sequence
-        setTimeout(() => {
-            document.getElementById('loading').classList.add('hidden');
-            setTimeout(() => {
-                document.getElementById('enterGate').classList.remove('hidden');
-            }, 500);
-        }, 2000);
-
-        // Enter button
-        document.getElementById('enterBtn').addEventListener('click', () => {
-            document.getElementById('enterGate').classList.add('hidden');
-        });
-
-        // Menu toggle
-        const menuBtn = document.getElementById('menuBtn');
-        const menu = document.getElementById('menu');
-
-        menuBtn.addEventListener('click', () => {
-            menuBtn.classList.toggle('active');
-            menu.classList.toggle('open');
-        });
-
-        // Menu navigation
-        const menuLinks = document.querySelectorAll('.menu a[data-section]');
-        menuLinks.forEach(link => {
-            link.addEventListener('click', () => {
-                const section = link.getAttribute('data-section');
-                
-                // Close menu
-                menuBtn.classList.remove('active');
-                menu.classList.remove('open');
-                
-                // Open overlay
-                setTimeout(() => {
-                    document.getElementById(section).classList.add('active');
-                }, 300);
+        // ── Heart SVG Marker ──────────────────────────────────
+        function heartSVG(color, size = 36) {
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 100 100">
+        <filter id="shadow-${color.replace('#', '')}" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="rgba(0,0,0,0.25)"/>
+        </filter>
+        <path filter="url(#shadow-${color.replace('#', '')})" d="M50 88C25 65 5 50 5 30 5 15 18 5 32 5c8 0 14 5 18 11C54 10 60 5 68 5c14 0 27 10 27 25 0 20-20 35-45 58z"
+              fill="${color}" stroke="#222" stroke-width="4" stroke-linejoin="round"/>
+        <ellipse cx="38" cy="30" rx="5" ry="6" fill="#222"/>
+        <ellipse cx="62" cy="30" rx="5" ry="6" fill="#222"/>
+        <ellipse cx="40" cy="28" rx="2" ry="2.5" fill="white"/>
+        <ellipse cx="64" cy="28" rx="2" ry="2.5" fill="white"/>
+        <path d="M38 48 Q50 58 62 48" fill="none" stroke="#222" stroke-width="3" stroke-linecap="round"/>
+    </svg>`;
+            return L.divIcon({
+                html: svg,
+                className: '',
+                iconSize: [size, size],
+                iconAnchor: [size / 2, size],
+                popupAnchor: [0, -size + 8]
             });
-        });
+        }
 
-        // Close overlay buttons
-        const closeButtons = document.querySelectorAll('.overlay-close');
-        closeButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                btn.closest('.overlay').classList.remove('active');
-            });
-        });
+        function popupAvatarSVG(color) {
+            return `<svg class="popup-avatar" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <path d="M50 88C25 65 5 50 5 30 5 15 18 5 32 5c8 0 14 5 18 11C54 10 60 5 68 5c14 0 27 10 27 25 0 20-20 35-45 58z"
+              fill="${color}" stroke="#222" stroke-width="4" stroke-linejoin="round"/>
+        <ellipse cx="38" cy="30" rx="5" ry="6" fill="#222"/>
+        <ellipse cx="62" cy="30" rx="5" ry="6" fill="#222"/>
+        <ellipse cx="40" cy="28" rx="2" ry="2.5" fill="white"/>
+        <ellipse cx="64" cy="28" rx="2" ry="2.5" fill="white"/>
+        <path d="M38 48 Q50 58 62 48" fill="none" stroke="#222" stroke-width="3" stroke-linecap="round"/>
+    </svg>`;
+        }
 
-        // Close overlay on ESC key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                document.querySelectorAll('.overlay.active').forEach(overlay => {
-                    overlay.classList.remove('active');
-                });
+        function sidebarAvatarSVG(color) {
+            return `<svg class="person-avatar" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <path d="M50 88C25 65 5 50 5 30 5 15 18 5 32 5c8 0 14 5 18 11C54 10 60 5 68 5c14 0 27 10 27 25 0 20-20 35-45 58z"
+              fill="${color}" stroke="#222" stroke-width="3.5" stroke-linejoin="round"/>
+        <ellipse cx="38" cy="30" rx="4.5" ry="5.5" fill="#222"/>
+        <ellipse cx="62" cy="30" rx="4.5" ry="5.5" fill="#222"/>
+        <ellipse cx="40" cy="28" rx="1.8" ry="2.2" fill="white"/>
+        <ellipse cx="64" cy="28" rx="1.8" ry="2.2" fill="white"/>
+        <path d="M38 48 Q50 58 62 48" fill="none" stroke="#222" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>`;
+        }
+
+        // ── Location Privacy: Randomize Senior Positions ──────
+        // ~100m displacement radius for senior privacy
+        // At latitude ~52°: 1° lat ≈ 111,320m, 1° lng ≈ 67,800m
+        function displaceLatLng(lat, lng, radiusMeters = 100) {
+            const angle = Math.random() * 2 * Math.PI;
+            const r = Math.sqrt(Math.random()) * radiusMeters; // uniform distribution in circle
+            const dLat = (r * Math.cos(angle)) / 111320;
+            const dLng = (r * Math.sin(angle)) / (111320 * Math.cos(lat * Math.PI / 180));
+            return { lat: lat + dLat, lng: lng + dLng };
+        }
+
+        // ── Real CRM Data (from helfer_crm.csv) ─────────────────
+        // Only includes people with VERIFIED address + data from registration forms
+                        const people = [
+            {
+                id: 1,
+                name: "Christiane Alvi",
+                type: "aktiv",
+                color: "#7ec882",
+                lat: 52.3973,
+                lng: 9.59718,
+                bio: "Alltagsbegleitung",
+                sprachen: "Deutsch",
+                zeitfenster: [],
+                tandemIds: [
+                    14
+                ],
+                status: "aktiv"
+            },
+            {
+                id: 2,
+                name: "Brigitte Basedow",
+                type: "aktiv",
+                color: "#7ec882",
+                lat: 52.3846,
+                lng: 9.76845,
+                bio: "Service Kraft, Pflegehilfskraft",
+                sprachen: "Deutsch",
+                zeitfenster: [],
+                tandemIds: [
+                    9
+                ],
+                status: "aktiv"
+            },
+            {
+                id: 3,
+                name: "Dagmar Jörn",
+                type: "helfer",
+                color: "#df9052",
+                lat: 52.43615,
+                lng: 9.73206,
+                bio: "Alltagsbegleitung",
+                sprachen: "Deutsch",
+                zeitfenster: [],
+                tandemIds: [],
+                status: "inaktiv"
+            },
+            {
+                id: 4,
+                name: "Heike Hering",
+                type: "helfer",
+                color: "#df9052",
+                lat: 52.38677,
+                lng: 9.74823,
+                bio: "Alltagsbegleitung",
+                sprachen: "Deutsch",
+                zeitfenster: [],
+                tandemIds: [],
+                status: "inaktiv"
+            },
+            {
+                id: 5,
+                name: "Susanne Hildebrandt",
+                type: "helfer",
+                color: "#df9052",
+                lat: 52.38249,
+                lng: 9.74167,
+                bio: "Service Kraft, Pflegehilfskraft",
+                sprachen: "Deutsch",
+                zeitfenster: [],
+                tandemIds: [],
+                status: "inaktiv"
+            },
+            {
+                id: 6,
+                name: "Veronika Heigl",
+                type: "senior",
+                color: "#5b9bd5",
+                lat: 52.36811,
+                lng: 9.76099,
+                bio: "Alltagsbegleitung",
+                sprachen: "Deutsch",
+                zeitfenster: [],
+                tandemIds: [
+                    19
+                ],
+                status: "betreut"
+            },
+            {
+                id: 7,
+                name: "Werner Voss",
+                type: "senior",
+                color: "#5b9bd5",
+                lat: 52.38305,
+                lng: 9.77007,
+                bio: "Alltagsbegleitung",
+                sprachen: "Deutsch",
+                zeitfenster: [],
+                tandemIds: [
+                    21
+                ],
+                status: "betreut"
+            },
+            {
+                id: 8,
+                name: "Marlene Schölzel",
+                type: "senior",
+                color: "#5b9bd5",
+                lat: 52.39095,
+                lng: 9.74712,
+                bio: "Alltagsbegleitung",
+                sprachen: "Deutsch",
+                zeitfenster: [],
+                tandemIds: [],
+                status: "wartend"
+            },
+            {
+                id: 9,
+                name: "Manfred Roesler",
+                type: "senior",
+                color: "#5b9bd5",
+                lat: 52.39229,
+                lng: 9.75086,
+                bio: "Alltagsbegleitung",
+                sprachen: "Deutsch",
+                zeitfenster: [],
+                tandemIds: [
+                    2
+                ],
+                status: "betreut"
+            },
+            {
+                id: 10,
+                name: "Renate Neumann",
+                type: "senior",
+                color: "#5b9bd5",
+                lat: 52.38814,
+                lng: 9.7452,
+                bio: "Alltagsbegleitung",
+                sprachen: "Deutsch",
+                zeitfenster: [],
+                tandemIds: [
+                    18
+                ],
+                status: "betreut"
+            },
+            {
+                id: 11,
+                name: "Ansorge Bärbel",
+                type: "senior",
+                color: "#5b9bd5",
+                lat: 52.41159,
+                lng: 9.80038,
+                bio: "Alltagsbegleitung",
+                sprachen: "Deutsch",
+                zeitfenster: [],
+                tandemIds: [],
+                status: "wartend"
+            },
+            {
+                id: 12,
+                name: "Dodegger Klaus",
+                type: "senior",
+                color: "#5b9bd5",
+                lat: 52.39268,
+                lng: 9.75491,
+                bio: "Alltagsbegleitung",
+                sprachen: "Deutsch",
+                zeitfenster: [],
+                tandemIds: [],
+                status: "wartend"
+            },
+            {
+                id: 13,
+                name: "Simsek Aynur",
+                type: "senior",
+                color: "#5b9bd5",
+                lat: 52.41459,
+                lng: 9.73229,
+                bio: "Alltagsbegleitung",
+                sprachen: "Deutsch",
+                zeitfenster: [],
+                tandemIds: [],
+                status: "wartend"
+            },
+            {
+                id: 14,
+                name: "Walter Janzen",
+                type: "senior",
+                color: "#5b9bd5",
+                lat: 52.34975,
+                lng: 9.71768,
+                bio: "Alltagsbegleitung",
+                sprachen: "Deutsch",
+                zeitfenster: [],
+                tandemIds: [
+                    1
+                ],
+                status: "betreut"
+            },
+            {
+                id: 15,
+                name: "Waltraud Heinrichs",
+                type: "senior",
+                color: "#5b9bd5",
+                lat: 52.39115,
+                lng: 9.74266,
+                bio: "Alltagsbegleitung",
+                sprachen: "Deutsch",
+                zeitfenster: [],
+                tandemIds: [
+                    19
+                ],
+                status: "betreut"
+            },
+            {
+                id: 16,
+                name: "Pamelo Dube",
+                type: "senior",
+                color: "#5b9bd5",
+                lat: 52.39919,
+                lng: 9.78037,
+                bio: "Alltagsbegleitung",
+                sprachen: "Deutsch",
+                zeitfenster: [],
+                tandemIds: [
+                    21
+                ],
+                status: "betreut"
+            },
+            {
+                id: 17,
+                name: "Nadezhda Mihaylova",
+                type: "helfer",
+                color: "#df9052",
+                lat: 52.36622,
+                lng: 9.66853,
+                bio: "Alltagsbegleitung",
+                sprachen: "Deutsch",
+                zeitfenster: [],
+                tandemIds: [],
+                status: "inaktiv"
+            },
+            {
+                id: 18,
+                name: "Natela Gündüz",
+                type: "aktiv",
+                color: "#7ec882",
+                lat: 52.4404,
+                lng: 9.7394,
+                bio: "Alltagsbegleitung",
+                sprachen: "Deutsch",
+                zeitfenster: [],
+                tandemIds: [
+                    10
+                ],
+                status: "aktiv"
+            },
+            {
+                id: 19,
+                name: "Maria Gündüz",
+                type: "aktiv",
+                color: "#7ec882",
+                lat: 52.44006,
+                lng: 9.74206,
+                bio: "Alltagsbegleitung",
+                sprachen: "Deutsch",
+                zeitfenster: [],
+                tandemIds: [
+                    6,
+                    15
+                ],
+                status: "aktiv"
+            },
+            {
+                id: 20,
+                name: "Susanne Schreiber",
+                type: "helfer",
+                color: "#df9052",
+                lat: 52.39947,
+                lng: 9.77813,
+                bio: "Alltagsbegleitung",
+                sprachen: "Deutsch",
+                zeitfenster: [],
+                tandemIds: [],
+                status: "inaktiv"
+            },
+            {
+                id: 21,
+                name: "Aleksandra Canik",
+                type: "aktiv",
+                color: "#7ec882",
+                lat: 52.40448,
+                lng: 9.70992,
+                bio: "Alltagsbegleitung",
+                sprachen: "Deutsch",
+                zeitfenster: [],
+                tandemIds: [
+                    16,
+                    7
+                ],
+                status: "aktiv"
+            },
+            {
+                id: 22,
+                name: "Ingrit Berger",
+                type: "helfer",
+                color: "#df9052",
+                lat: 52.39069,
+                lng: 9.75157,
+                bio: "Alltagsbegleitung",
+                sprachen: "Deutsch",
+                zeitfenster: [],
+                tandemIds: [],
+                status: "inaktiv"
+            }
+        ];
+
+        // ── State ─────────────────────────────────────────────
+        let activeFilters = { helfer: true, senioren: true, aktiv: true };
+        let activePersonId = null;
+        let markers = {};
+
+        // Pre-compute displaced positions for seniors (privacy)
+        const displacedPositions = {};
+        people.forEach(person => {
+            if (person.type === 'senior') {
+                displacedPositions[person.id] = displaceLatLng(person.lat, person.lng, 100);
             }
         });
+
+        // ── Map Init ──────────────────────────────────────────
+        const map = L.map('map', {
+            zoomControl: false
+        }).setView([52.3855, 9.7500], 16);
+
+        L.control.zoom({ position: 'topright' }).addTo(map);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(map);
+
+        // ── Render Functions ──────────────────────────────────
+        function getTypeLabel(type) {
+            return type === 'helfer' ? 'Helfer:in' : type === 'senior' ? 'Senior:in' : 'Aktive:r Helfer:in';
+        }
+
+        function getFilterKey(type) {
+            return type === 'helfer' ? 'helfer' : type === 'senior' ? 'senioren' : 'aktiv';
+        }
+
+        function getPopupHTML(person) {
+            const typeClass = person.type === 'helfer' ? 'helfer' : person.type === 'senior' ? 'senior' : 'aktiv';
+            return `
+        <div class="popup-card">
+            <div class="popup-header">
+                ${popupAvatarSVG(person.color)}
+                <div>
+                    <div class="popup-name">${person.name}</div>
+                    <span class="popup-type ${typeClass}">${getTypeLabel(person.type)}</span>
+                </div>
+            </div>
+            <p class="popup-bio">${person.bio}</p>
+            <div class="popup-meta">
+                <div class="popup-meta-item">
+                    <span class="popup-meta-icon">🗣️</span>
+                    <span>${person.sprachen}</span>
+                </div>
+                <div class="popup-meta-item">
+                    <span class="popup-meta-icon">🕐</span>
+                    <span>${formatZeitfenster(person.zeitfenster)}</span>
+                </div>
+            </div>
+        </div>
+    `;
+        }
+
+        function addMarkers() {
+            Object.values(markers).forEach(m => map.removeLayer(m));
+            markers = {};
+
+            people.forEach(person => {
+                const filterKey = getFilterKey(person.type);
+                if (!activeFilters[filterKey]) return;
+
+                // Use displaced position for seniors, original for others
+                const pos = displacedPositions[person.id] || { lat: person.lat, lng: person.lng };
+
+                const marker = L.marker([pos.lat, pos.lng], {
+                    icon: heartSVG(person.color, 40)
+                }).addTo(map);
+
+                marker.bindPopup(getPopupHTML(person), { closeButton: true, maxWidth: 280 });
+
+                marker.on('click', () => {
+                    setActivePerson(person.id);
+                });
+
+                markers[person.id] = marker;
+            });
+        }
+
+        function renderSidebar() {
+            const filtered = people.filter(p => activeFilters[getFilterKey(p.type)]);
+
+            document.getElementById('personList').innerHTML = filtered.map(person => {
+                const typeClass = person.type === 'helfer' ? 'helfer' : person.type === 'senior' ? 'senior' : 'aktiv';
+                return `
+            <div class="person-card ${person.id === activePersonId ? 'active' : ''}"
+                 onclick="panToPerson(${person.id})" id="card-${person.id}">
+                ${sidebarAvatarSVG(person.color)}
+                <div class="person-info">
+                    <h3>${person.name}</h3>
+                    <p>${person.bio.substring(0, 50)}…</p>
+                </div>
+                <span class="person-role ${typeClass}">${getTypeLabel(person.type)}</span>
+            </div>
+        `;
+            }).join('');
+        }
+
+        function renderStats() {
+            const helferCount = people.filter(p => p.type === 'helfer').length;
+            const seniorCount = people.filter(p => p.type === 'senior').length;
+            const aktivCount = people.filter(p => p.type === 'aktiv').length;
+
+            document.getElementById('stats').innerHTML = `
+        <div class="stat-badge helfer"><span class="stat-dot orange"></span>${helferCount} Helfer</div>
+        <div class="stat-badge senioren"><span class="stat-dot blue"></span>${seniorCount} Senioren</div>
+        <div class="stat-badge aktiv"><span class="stat-dot green"></span>${aktivCount} Aktive</div>
+    `;
+        }
+
+        function renderFilters() {
+            document.getElementById('filters').innerHTML = `
+        <button class="filter-btn ${activeFilters.helfer ? 'active-helfer' : ''}"
+                onclick="toggleFilter('helfer')">
+            🟠 Helfer:innen
+        </button>
+        <button class="filter-btn ${activeFilters.senioren ? 'active-senioren' : ''}"
+                onclick="toggleFilter('senioren')">
+            🔵 Senior:innen
+        </button>
+        <button class="filter-btn ${activeFilters.aktiv ? 'active-aktiv' : ''}"
+                onclick="toggleFilter('aktiv')">
+            💚 Aktive Helfer
+        </button>
+    `;
+        }
+
+        // ── Interactions ──────────────────────────────────────
+        function toggleFilter(type) {
+            activeFilters[type] = !activeFilters[type];
+            render();
+        }
+
+        function panToPerson(id) {
+            const person = people.find(p => p.id === id);
+            if (!person) return;
+            setActivePerson(id);
+            const pos = displacedPositions[id] || { lat: person.lat, lng: person.lng };
+            map.flyTo([pos.lat, pos.lng], 17, { duration: 0.6 });
+            if (markers[id]) markers[id].openPopup();
+        }
+
+        function setActivePerson(id) {
+            activePersonId = id;
+            document.querySelectorAll('.person-card').forEach(c => c.classList.remove('active'));
+            const card = document.getElementById(`card-${id}`);
+            if (card) {
+                card.classList.add('active');
+                card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        // ── Initial Render ────────────────────────────────────
+        function render() {
+            renderStats();
+            renderFilters();
+            renderSidebar();
+            addMarkers();
+        }
+
+        render();
+
+        // ── Dashboard ─────────────────────────────────────────
+        // Demo status data (in production, this would come from a DB)
+        const statuses = ['aktiv', 'aktiv', 'wartend', 'aktiv', 'aktiv', 'aktiv', 'wartend', 'pausiert', 'aktiv', 'aktiv'];
+        people.forEach((p, i) => { p.status = statuses[i] || 'aktiv'; });
+
+        // Demo KPI data
+        const kpis = {
+            besuche_monat: 47,
+            besuche_trend: '+12%',
+            matchings_aktiv: 7,
+            wartezeit_tage: 3,
+            coverage: 85
+        };
+
+        function switchView(view) {
+            const app = document.querySelector('.app');
+            const dash = document.getElementById('dashboardView');
+            const btnK = document.getElementById('btnKarte');
+            const btnD = document.getElementById('btnDashboard');
+
+            if (view === 'dashboard') {
+                app.classList.add('hidden');
+                dash.classList.add('visible');
+                btnK.classList.remove('active');
+                btnD.classList.add('active');
+                renderDashboard();
+            } else {
+                app.classList.remove('hidden');
+                dash.classList.remove('visible');
+                btnK.classList.add('active');
+                btnD.classList.remove('active');
+                map.invalidateSize();
+            }
+        }
+
+        function renderDashboard() {
+            renderKPIs();
+            renderBarChart();
+            renderMatchChart();
+            renderDashTable();
+        }
+
+        function renderKPIs() {
+            const helferCount = people.filter(p => p.type === 'helfer').length;
+            const seniorCount = people.filter(p => p.type === 'senior').length;
+            const typeAktivCount = people.filter(p => p.type === 'aktiv').length;
+            const aktivCount = people.filter(p => p.status === 'aktiv').length;
+
+            document.getElementById('kpiCards').innerHTML = `
+                <div class="kpi-card orange">
+                    <div class="kpi-label">Helfer:innen</div>
+                    <div class="kpi-value orange">${helferCount}</div>
+                    <div class="kpi-sub">${people.filter(p => p.type === 'helfer' && p.status === 'aktiv').length} aktiv</div>
+                </div>
+                <div class="kpi-card blue">
+                    <div class="kpi-label">Senior:innen</div>
+                    <div class="kpi-value blue">${seniorCount}</div>
+                    <div class="kpi-sub">${people.filter(p => p.type === 'senior' && p.status === 'wartend').length} warten auf Matching</div>
+                </div>
+                <div class="kpi-card green">
+                    <div class="kpi-label">Besuche / Monat</div>
+                    <div class="kpi-value green">${kpis.besuche_monat}</div>
+                    <div class="kpi-trend up">↑ ${kpis.besuche_trend} vs. Vormonat</div>
+                </div>
+                <div class="kpi-card purple">
+                    <div class="kpi-label">Aktive Matchings</div>
+                    <div class="kpi-value purple">${kpis.matchings_aktiv}</div>
+                    <div class="kpi-sub">∅ ${kpis.wartezeit_tage} Tage Wartezeit</div>
+                </div>
+                <div class="kpi-card orange">
+                    <div class="kpi-label">Coverage Rate</div>
+                    <div class="kpi-value orange">${kpis.coverage}%</div>
+                    <div class="kpi-sub">Senior:innen mit zugewiesenem Helfer</div>
+                </div>
+                <div class="kpi-card green">
+                    <div class="kpi-label">Aktive Helfer:innen</div>
+                    <div class="kpi-value green">${typeAktivCount}</div>
+                    <div class="kpi-sub">Einsatzbereite Kräfte</div>
+                </div>
+            `;
+        }
+
+        function renderBarChart() {
+            const total = people.length;
+            const helfer = people.filter(p => p.type === 'helfer').length;
+            const senior = people.filter(p => p.type === 'senior').length;
+            const aktiv = people.filter(p => p.type === 'aktiv').length;
+
+            document.getElementById('barChart').innerHTML = `
+                <div class="bar-row">
+                    <span class="bar-label">Helfer:innen</span>
+                    <div class="bar-track"><div class="bar-fill orange" style="width:${(helfer / total * 100).toFixed(0)}%">${helfer}</div></div>
+                </div>
+                <div class="bar-row">
+                    <span class="bar-label">Senior:innen</span>
+                    <div class="bar-track"><div class="bar-fill blue" style="width:${(senior / total * 100).toFixed(0)}%">${senior}</div></div>
+                </div>
+                <div class="bar-row">
+                    <span class="bar-label">Aktive Helfer</span>
+                    <div class="bar-track"><div class="bar-fill green" style="width:${(aktiv / total * 100).toFixed(0)}%">${aktiv}</div></div>
+                </div>
+            `;
+        }
+
+        function renderMatchChart() {
+            const total = people.length;
+            const aktiv = people.filter(p => p.status === 'aktiv').length;
+            const wartend = people.filter(p => p.status === 'wartend').length;
+            const pausiert = people.filter(p => p.status === 'pausiert').length;
+
+            document.getElementById('matchChart').innerHTML = `
+                <div class="bar-row">
+                    <span class="bar-label">🟢 Aktiv</span>
+                    <div class="bar-track"><div class="bar-fill green" style="width:${(aktiv / total * 100).toFixed(0)}%">${aktiv}</div></div>
+                </div>
+                <div class="bar-row">
+                    <span class="bar-label">🟡 Wartend</span>
+                    <div class="bar-track"><div class="bar-fill orange" style="width:${(wartend / total * 100).toFixed(0)}%">${wartend}</div></div>
+                </div>
+                <div class="bar-row">
+                    <span class="bar-label">⏸️ Pausiert</span>
+                    <div class="bar-track"><div class="bar-fill blue" style="width:${(pausiert / total * 100).toFixed(0)}%">${pausiert}</div></div>
+                </div>
+            `;
+        }
+
+        function renderDashTable() {
+            document.getElementById('dashTable').innerHTML = people.map(p => {
+                const role = p.type === 'helfer' ? 'Helfer:in' : p.type === 'senior' ? 'Senior:in' : 'Aktive:r Helfer:in';
+                return `<tr onclick="openDetail(${p.id})" style="cursor:pointer">
+                    <td><strong>${p.name}</strong></td>
+                    <td>${role}</td>
+                    <td>${p.sprachen}</td>
+                    <td>${formatZeitfenster(p.zeitfenster)}</td>
+                    <td><span class="status-dot ${p.status}"></span>${p.status.charAt(0).toUpperCase() + p.status.slice(1)}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        // ── Person Detail Panel ───────────────────────────────
+        // Demo visit data
+        const demoVisits = {
+            1: [{ d: '2026-03-01', note: 'Einkauf begleitet' }, { d: '2026-02-25', note: 'Spaziergang im Park' }, { d: '2026-02-18', note: 'Gemeinsames Kochen' }, { d: '2026-02-11', note: 'Arztbesuch begleitet' }, { d: '2026-03-04', note: 'Geplant: Vorlesen' }],
+            2: [{ d: '2026-02-27', note: 'Besuch von Amira' }, { d: '2026-02-20', note: 'Schach gespielt' }, { d: '2026-02-13', note: 'Spaziergang' }, { d: '2026-03-06', note: 'Geplant: Einkauf' }],
+            3: [{ d: '2026-03-01', note: 'Beratungsgespräch' }, { d: '2026-02-24', note: 'Hausbesuch' }, { d: '2026-02-17', note: 'Formulare ausgefüllt' }, { d: '2026-03-08', note: 'Geplant: Arztbegleitung' }],
+            4: [{ d: '2026-02-26', note: 'Vorgelesen' }, { d: '2026-02-19', note: 'Besuch Fatima' }, { d: '2026-03-05', note: 'Geplant: Spaziergang' }],
+            5: [{ d: '2026-03-01', note: 'Einkauf für Frau L.' }, { d: '2026-02-22', note: 'Wochenmarkt' }, { d: '2026-02-15', note: 'Umzugshilfe' }],
+            6: [{ d: '2026-02-28', note: 'Erzählnachmittag' }, { d: '2026-02-21', note: 'Besuch Carlos' }, { d: '2026-02-14', note: 'Valentinstag-Kaffee' }, { d: '2026-03-07', note: 'Geplant: Fotoalbum' }],
+            7: [{ d: '2026-03-01', note: 'Arztbesuch begleitet' }, { d: '2026-02-22', note: 'Formulare übersetzt' }, { d: '2026-03-08', note: 'Geplant: Apotheke' }],
+            8: [{ d: '2026-02-27', note: 'Technik-Hilfe Tablet' }, { d: '2026-02-20', note: 'Spaziergang' }, { d: '2026-03-06', note: 'Geplant: Videocall Enkel' }],
+            9: [{ d: '2026-03-01', note: 'Koordination 3 Besuche' }, { d: '2026-02-24', note: 'Erstgespräch neuer Helfer' }, { d: '2026-02-17', note: 'Supervision' }],
+            10: [{ d: '2026-02-25', note: 'Arzttermin begleitet' }, { d: '2026-02-18', note: 'Einkauf' }, { d: '2026-03-04', note: 'Geplant: Augenarzt' }]
+        };
+
+        let detailCalMonth = new Date().getMonth();
+        let detailCalYear = new Date().getFullYear();
+        let detailPersonId = null;
+
+        function openDetail(id) {
+            detailPersonId = id;
+            detailCalMonth = new Date().getMonth();
+            detailCalYear = new Date().getFullYear();
+            renderDetailPanel(id);
+            document.getElementById('detailOverlay').classList.add('open');
+            document.getElementById('detailPanel').classList.add('open');
+        }
+
+        function closeDetail() {
+            document.getElementById('detailOverlay').classList.remove('open');
+            document.getElementById('detailPanel').classList.remove('open');
+        }
+
+        function renderDetailPanel(id) {
+            const p = people.find(x => x.id === id);
+            if (!p) return;
+            const role = p.type === 'helfer' ? 'Helfer:in' : p.type === 'senior' ? 'Senior:in' : 'Aktive:r Helfer:in';
+            const typeClass = p.type === 'helfer' ? 'helfer' : p.type === 'senior' ? 'senior' : 'aktiv';
+            const visits = demoVisits[id] || [];
+            const pastVisits = visits.filter(v => new Date(v.d) <= new Date()).sort((a, b) => new Date(b.d) - new Date(a.d));
+            const futureVisits = visits.filter(v => new Date(v.d) > new Date()).sort((a, b) => new Date(a.d) - new Date(b.d));
+
+            document.getElementById('detailContent').innerHTML = `
+                <div class="detail-hero">
+                    ${popupAvatarSVG(p.color).replace('popup-avatar', 'detail-hero-avatar')}
+                    <div>
+                        <div class="detail-hero-name">${p.name}</div>
+                        <span class="detail-hero-role ${typeClass}">${role}</span>
+                    </div>
+                </div>
+                <div class="detail-body">
+                    <div class="detail-section">
+                        <h4>📋 Übersicht</h4>
+                        <div class="detail-grid">
+                            <div class="detail-field"><div class="detail-field-label">Status</div><div class="detail-field-value"><span class="status-dot ${p.status}" style="display:inline-block;margin-right:6px"></span>${p.status.charAt(0).toUpperCase() + p.status.slice(1)}</div></div>
+                            <div class="detail-field"><div class="detail-field-label">Sprachen</div><div class="detail-field-value">${p.sprachen}</div></div>
+                            <div class="detail-field"><div class="detail-field-label">Zeitfenster</div><div class="detail-field-value">${formatZeitfenster(p.zeitfenster)}</div></div>
+                            <div class="detail-field"><div class="detail-field-label">Besuche gesamt</div><div class="detail-field-value">${pastVisits.length}</div></div>
+                        </div>
+                        <div class="detail-field" style="margin-top:10px"><div class="detail-field-label">Bio</div><div class="detail-field-value" style="font-weight:400;font-size:0.84rem;line-height:1.5">${p.bio}</div></div>
+                    </div>
+                    <div class="detail-section">
+                        <h4>🗓️ Wochenplan</h4>
+                        ${renderScheduleGrid(p)}
+                    </div>
+                    <div class="detail-section">
+                        <h4>📅 Kalender</h4>
+                        <div id="detailCalendar"></div>
+                    </div>
+                    <div class="detail-section">
+                        <h4>📝 Letzte Besuche</h4>
+                        <div class="visit-log">
+                            ${pastVisits.map(v => `<div class="visit-entry"><span class="visit-type-dot" style="background:var(--green)"></span><span class="visit-date">${formatDate(v.d)}</span><span class="visit-note">${v.note}</span></div>`).join('')}
+                            ${pastVisits.length === 0 ? '<div style="color:var(--text-secondary);font-size:0.82rem">Noch keine Besuche</div>' : ''}
+                        </div>
+                    </div>
+                    ${futureVisits.length > 0 ? `<div class="detail-section">
+                        <h4>🔜 Geplant</h4>
+                        <div class="visit-log">
+                            ${futureVisits.map(v => `<div class="visit-entry"><span class="visit-type-dot" style="background:var(--blue)"></span><span class="visit-date">${formatDate(v.d)}</span><span class="visit-note">${v.note}</span></div>`).join('')}
+                        </div>
+                    </div>` : ''}
+                </div>
+            `;
+            renderCalendar(id);
+        }
+
+        // ── Zeitfenster helpers ───────────────────────────────
+        function formatZeitfenster(slots) {
+            if (!slots || slots.length === 0) return 'Nach Absprache';
+            return slots.map(s => `${s.tag} ${s.von}–${s.bis}`).join(', ');
+        }
+
+        function renderScheduleGrid(person) {
+            const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+            const hours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
+            const typeClass = person.type === 'helfer' ? 'filled-helfer' : person.type === 'senior' ? 'filled-senior' : 'filled-aktiv';
+            const slots = person.zeitfenster || [];
+
+            function isSlotFilled(day, hour) {
+                return slots.some(s => s.tag === day && parseInt(s.von) <= hour && parseInt(s.bis) > hour);
+            }
+
+            let html = '<div class="schedule-grid">';
+            html += '<div></div>';
+            days.forEach(d => { html += `<div class="schedule-header">${d}</div>`; });
+
+            hours.forEach(h => {
+                html += `<div class="schedule-time">${h}:00</div>`;
+                days.forEach(d => {
+                    const filled = isSlotFilled(d, h);
+                    html += `<div class="schedule-cell${filled ? ' ' + typeClass : ''}"></div>`;
+                });
+            });
+            html += '</div>';
+            return html;
+        }
+
+        function formatDate(d) {
+            const dt = new Date(d);
+            return dt.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+        }
+
+        function renderCalendar(id) {
+            const visits = (demoVisits[id] || []).map(v => v.d);
+            const today = new Date();
+            const firstDay = new Date(detailCalYear, detailCalMonth, 1).getDay();
+            const daysInMonth = new Date(detailCalYear, detailCalMonth + 1, 0).getDate();
+            const monthName = new Date(detailCalYear, detailCalMonth).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+            const startOffset = (firstDay + 6) % 7; // Monday start
+            const dayLabels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
+            let html = `<div class="cal-header">
+                <button class="cal-nav" onclick="navCal(-1)">◀</button>
+                <span>${monthName.charAt(0).toUpperCase() + monthName.slice(1)}</span>
+                <button class="cal-nav" onclick="navCal(1)">▶</button>
+            </div><div class="cal-grid">`;
+            html += dayLabels.map(d => `<div class="cal-day-label">${d}</div>`).join('');
+            for (let i = 0; i < startOffset; i++) html += '<div class="cal-day empty"></div>';
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateStr = `${detailCalYear}-${String(detailCalMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const isVisit = visits.includes(dateStr);
+                const isToday = d === today.getDate() && detailCalMonth === today.getMonth() && detailCalYear === today.getFullYear();
+                const isFuture = new Date(dateStr) > today;
+                let cls = 'cal-day';
+                if (isToday) cls += ' today';
+                if (isVisit && !isFuture) cls += ' visit';
+                if (isVisit && isFuture) cls += ' visit-blue';
+                html += `<div class="${cls}">${d}</div>`;
+            }
+            html += '</div>';
+            html += '<div class="cal-legend"><span><span class="cal-legend-dot" style="background:var(--orange-light)"></span> Besuch</span><span><span class="cal-legend-dot" style="background:var(--blue-light)"></span> Geplant</span><span><span class="cal-legend-dot" style="background:#f0f0f5"></span> Heute</span></div>';
+            document.getElementById('detailCalendar').innerHTML = html;
+        }
+
+        function navCal(dir) {
+            detailCalMonth += dir;
+            if (detailCalMonth > 11) { detailCalMonth = 0; detailCalYear++; }
+            if (detailCalMonth < 0) { detailCalMonth = 11; detailCalYear--; }
+            renderCalendar(detailPersonId);
+        }
     </script>
 </body>
+
 </html>
