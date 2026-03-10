@@ -1097,6 +1097,17 @@
             background: linear-gradient(135deg, #c8eeca, #b8e6ba);
             border: 1px solid var(--green);
         }
+
+        .tandem-tooltip {
+            background: white;
+            border: 1px solid #10b981;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-weight: bold;
+            font-size: 11px;
+            opacity: 0.9 !important;
+            color: #10b981;
+        }
     </style>
 </head>
 
@@ -1263,7 +1274,7 @@
 
         // ── Real CRM Data (from helfer_crm.csv) ─────────────────
         // Only includes people with VERIFIED address + data from registration forms
-                        const people = [
+        const people = [
             {
                 id: 1,
                 name: "Christiane Alvi",
@@ -1579,7 +1590,7 @@
         ];
 
         // ── State ─────────────────────────────────────────────
-        let activeFilters = { helfer: true, senioren: true, aktiv: true };
+        let activeFilters = { helfer: true, senioren: true, aktiv: true, tandems: false };
         let activePersonId = null;
         let markers = {};
 
@@ -1709,7 +1720,49 @@
                 onclick="toggleFilter('aktiv')">
             💚 Aktive Helfer
         </button>
+        <button class="filter-btn"
+                onclick="toggleFilter('tandems')"
+                style="border-color: #10b981; color: ${activeFilters.tandems ? 'white' : '#10b981'}; background: ${activeFilters.tandems ? '#10b981' : 'white'};">
+            🔗 Tandems & Distanzen
+        </button>
     `;
+        }
+
+        let tandemLines = [];
+
+        function drawTandems() {
+            tandemLines.forEach(line => map.removeLayer(line));
+            tandemLines = [];
+
+            if (!activeFilters.tandems) return;
+
+            people.forEach(p1 => {
+                if (p1.tandemIds && p1.tandemIds.length > 0) {
+                    p1.tandemIds.forEach(tId => {
+                        const p2 = people.find(x => x.id === tId);
+                        if (p2 && p1.id < p2.id) {
+                            const latlng1 = L.latLng(displacedPositions[p1.id] || { lat: p1.lat, lng: p1.lng });
+                            const latlng2 = L.latLng(displacedPositions[p2.id] || { lat: p2.lat, lng: p2.lng });
+                            const dist = (latlng1.distanceTo(latlng2) / 1000).toFixed(1);
+
+                            const line = L.polyline([latlng1, latlng2], {
+                                color: '#10b981',
+                                weight: 3,
+                                opacity: 0.8,
+                                dashArray: '5, 8'
+                            }).addTo(map);
+
+                            line.bindTooltip(`${dist} km`, {
+                                permanent: true,
+                                direction: 'center',
+                                className: 'tandem-tooltip'
+                            });
+
+                            tandemLines.push(line);
+                        }
+                    });
+                }
+            });
         }
 
         // ── Interactions ──────────────────────────────────────
@@ -1743,14 +1796,13 @@
             renderFilters();
             renderSidebar();
             addMarkers();
+            drawTandems();
         }
 
         render();
 
         // ── Dashboard ─────────────────────────────────────────
-        // Demo status data (in production, this would come from a DB)
-        const statuses = ['aktiv', 'aktiv', 'wartend', 'aktiv', 'aktiv', 'aktiv', 'wartend', 'pausiert', 'aktiv', 'aktiv'];
-        people.forEach((p, i) => { p.status = statuses[i] || 'aktiv'; });
+
 
         // Demo KPI data
         const kpis = {
