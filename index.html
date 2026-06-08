@@ -1,2105 +1,644 @@
 <!DOCTYPE html>
-<html lang="de">
-
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Helferherz – Karte | Hannover List</title>
-    <meta name="description"
-        content="Interaktive Karte von Helferherz: Finde Helfer:innen und Senior:innen in Hannover-List.">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <title>Leonard Zirk | Creative Strategist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        :root {
-            --orange: #df9052;
-            --orange-light: #f5c89a;
-            --orange-dark: #c47530;
-            --blue: #5b9bd5;
-            --blue-light: #b4cae4;
-            --blue-dark: #3a7cbf;
-            --green: #7ec882;
-            --green-dark: #4da653;
-            --lavender: #b39ddb;
-            --bg-dark: #1a1a2e;
-            --bg-card: #ffffff;
-            --text-primary: #1a1a2e;
-            --text-secondary: #5a5a7a;
-            --radius: 16px;
-            --shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-            --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.18);
-        }
-
         body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background: linear-gradient(135deg, #fef3e8 0%, #e8f0fe 100%);
-            min-height: 100vh;
-            color: var(--text-primary);
-        }
-
-        /* ── Header ─────────────────────────────────── */
-        .header {
-            background: linear-gradient(135deg, var(--orange) 0%, var(--orange-dark) 100%);
-            padding: 20px 32px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            box-shadow: 0 4px 20px rgba(223, 144, 82, 0.35);
-            position: relative;
-            z-index: 1000;
-        }
-
-        .header-logo {
-            width: 48px;
-            height: 48px;
-        }
-
-        .header h1 {
-            color: white;
-            font-size: 1.6rem;
-            font-weight: 900;
-            letter-spacing: -0.5px;
-            text-transform: uppercase;
-        }
-
-        .header p {
-            color: rgba(255, 255, 255, 0.85);
-            font-size: 0.85rem;
-            font-weight: 400;
-        }
-
-        /* ── Main Layout ────────────────────────────── */
-        .app {
-            display: flex;
-            height: calc(100vh - 88px);
-        }
-
-        /* ── Sidebar ────────────────────────────────── */
-        .sidebar {
-            width: 360px;
-            background: var(--bg-card);
-            border-right: 1px solid rgba(0, 0, 0, 0.06);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .sidebar-header {
-            padding: 20px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-        }
-
-        .stats {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-
-        .stat-badge {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 14px;
-            border-radius: 100px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            flex: 1;
-            justify-content: center;
-            transition: transform 0.2s, box-shadow 0.2s;
-            cursor: default;
-        }
-
-        .stat-badge:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow);
-        }
-
-        .stat-badge.helfer {
-            background: linear-gradient(135deg, #fff3e6, #ffe0c2);
-            color: var(--orange-dark);
-        }
-
-        .stat-badge.senioren {
-            background: linear-gradient(135deg, #e6f0ff, #c2d9f7);
-            color: var(--blue-dark);
-        }
-
-        .stat-badge.aktiv {
-            background: linear-gradient(135deg, #e6f9e6, #c2ecc4);
-            color: var(--green-dark);
-        }
-
-        .stat-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-        }
-
-        .stat-dot.orange {
-            background: var(--orange);
-        }
-
-        .stat-dot.blue {
-            background: var(--blue);
-        }
-
-        .stat-dot.green {
-            background: var(--green);
-        }
-
-        /* ── Filters ────────────────────────────────── */
-        .filters {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .filter-btn {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 7px 14px;
-            border: 2px solid rgba(0, 0, 0, 0.08);
-            border-radius: 100px;
-            background: white;
             font-family: 'Inter', sans-serif;
-            font-size: 0.78rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            height: 100vh;
+            background-color: #000;
             user-select: none;
         }
-
-        .filter-btn:hover {
-            border-color: rgba(0, 0, 0, 0.15);
-        }
-
-        .filter-btn.active-helfer {
-            background: var(--orange);
-            color: white;
-            border-color: var(--orange);
-        }
-
-        .filter-btn.active-senioren {
-            background: var(--blue);
-            color: white;
-            border-color: var(--blue);
-        }
-
-        .filter-btn.active-aktiv {
-            background: var(--green);
-            color: white;
-            border-color: var(--green);
-        }
-
-        /* ── Person List ────────────────────────────── */
-        .person-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 12px;
-        }
-
-        .person-list::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .person-list::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .person-list::-webkit-scrollbar-thumb {
-            background: rgba(0, 0, 0, 0.12);
-            border-radius: 3px;
-        }
-
-        .person-card {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 14px 16px;
-            border-radius: 14px;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: pointer;
-            margin-bottom: 6px;
-        }
-
-        .person-card:hover {
-            background: rgba(0, 0, 0, 0.03);
-            transform: translateX(4px);
-        }
-
-        .person-card.active {
-            background: rgba(223, 144, 82, 0.08);
-            box-shadow: 0 2px 12px rgba(223, 144, 82, 0.15);
-        }
-
-        .person-avatar {
-            width: 44px;
-            height: 44px;
-            flex-shrink: 0;
-        }
-
-        .person-info h3 {
-            font-size: 0.9rem;
-            font-weight: 700;
-            margin-bottom: 2px;
-        }
-
-        .person-info p {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-        }
-
-        .person-role {
-            margin-left: auto;
-            padding: 4px 10px;
-            border-radius: 100px;
-            font-size: 0.65rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            flex-shrink: 0;
-        }
-
-        .person-role.helfer {
-            background: #fff3e6;
-            color: var(--orange-dark);
-        }
-
-        .person-role.senior {
-            background: #e6f0ff;
-            color: var(--blue-dark);
-        }
-
-        .person-role.aktiv {
-            background: #e6f9e6;
-            color: var(--green-dark);
-        }
-
-        /* ── Map ────────────────────────────────────── */
-        .map-container {
-            flex: 1;
-            position: relative;
-        }
-
-        #map {
+        #video-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
+            object-fit: cover;
+            z-index: -1;
         }
-
-        /* Custom popup */
-        .leaflet-popup-content-wrapper {
-            border-radius: 16px !important;
-            box-shadow: var(--shadow) !important;
-            padding: 0 !important;
-            overflow: hidden;
-        }
-
-        .leaflet-popup-content {
-            margin: 0 !important;
-            min-width: 240px;
-        }
-
-        .leaflet-popup-tip {
-            box-shadow: none !important;
-        }
-
-        .popup-card {
-            padding: 20px;
-        }
-
-        .popup-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        .popup-avatar {
-            width: 48px;
-            height: 48px;
-        }
-
-        .popup-name {
-            font-weight: 800;
-            font-size: 1rem;
-        }
-
-        .popup-type {
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 3px 8px;
-            border-radius: 100px;
-            display: inline-block;
-            margin-top: 2px;
-        }
-
-        .popup-type.helfer {
-            background: #fff3e6;
-            color: var(--orange-dark);
-        }
-
-        .popup-type.senior {
-            background: #e6f0ff;
-            color: var(--blue-dark);
-        }
-
-        .popup-type.aktiv {
-            background: #e6f9e6;
-            color: var(--green-dark);
-        }
-
-        .popup-bio {
-            font-size: 0.82rem;
-            color: var(--text-secondary);
-            line-height: 1.5;
-            margin-bottom: 12px;
-        }
-
-        .popup-meta {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .popup-meta-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.78rem;
-            color: var(--text-secondary);
-        }
-
-        .popup-meta-icon {
-            font-size: 1rem;
-        }
-
-        /* ── Legend ──────────────────────────────────── */
-        .legend {
-            position: absolute;
-            bottom: 28px;
-            right: 16px;
-            background: white;
-            border-radius: var(--radius);
-            padding: 16px 20px;
-            box-shadow: var(--shadow);
-            z-index: 999;
-            min-width: 180px;
-        }
-
-        .legend h4 {
-            font-size: 0.75rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-secondary);
-            margin-bottom: 10px;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 8px;
-            font-size: 0.82rem;
-            font-weight: 500;
-        }
-
-        .legend-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .legend-heart {
-            width: 22px;
-            height: 22px;
-        }
-
-        /* ── Animations ─────────────────────────────── */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(12px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .person-card {
-            animation: fadeInUp 0.4s ease both;
-        }
-
-        .person-card:nth-child(1) {
-            animation-delay: 0.05s;
-        }
-
-        .person-card:nth-child(2) {
-            animation-delay: 0.10s;
-        }
-
-        .person-card:nth-child(3) {
-            animation-delay: 0.15s;
-        }
-
-        .person-card:nth-child(4) {
-            animation-delay: 0.20s;
-        }
-
-        .person-card:nth-child(5) {
-            animation-delay: 0.25s;
-        }
-
-        .person-card:nth-child(6) {
-            animation-delay: 0.30s;
-        }
-
-        .person-card:nth-child(7) {
-            animation-delay: 0.35s;
-        }
-
-        .person-card:nth-child(8) {
-            animation-delay: 0.40s;
-        }
-
-        /* ── Responsive ─────────────────────────────── */
-        @media (max-width: 768px) {
-            .app {
-                flex-direction: column-reverse;
-            }
-
-            .sidebar {
-                width: 100%;
-                height: 45vh;
-            }
-
-            .map-container {
-                height: 55vh;
-            }
-
-            .legend {
-                bottom: 12px;
-                right: 12px;
-                padding: 12px 14px;
-            }
-        }
-
-        /* ── View Toggle ────────────────────────────── */
-        .view-toggle {
-            display: flex;
-            gap: 4px;
-            margin-left: auto;
-            background: rgba(0, 0, 0, 0.15);
-            border-radius: 10px;
-            padding: 4px;
-        }
-
-        .view-btn {
-            padding: 8px 18px;
-            border: none;
-            border-radius: 8px;
-            font-family: 'Inter', sans-serif;
-            font-size: 0.8rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: transparent;
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .view-btn.active {
-            background: white;
-            color: var(--orange-dark);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        }
-
-        .view-btn:hover:not(.active) {
+        .menu-bar {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             color: white;
-        }
-
-        /* ── Dashboard ──────────────────────────────── */
-        .dashboard {
-            display: none;
-            height: calc(100vh - 88px);
-            overflow-y: auto;
-            padding: 28px;
-            background: linear-gradient(135deg, #f8f5f1 0%, #eef2f9 100%);
-        }
-
-        .dashboard.visible {
-            display: block;
-        }
-
-        .app.hidden {
-            display: none;
-        }
-
-        .dash-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 18px;
-            margin-bottom: 28px;
-        }
-
-        .kpi-card {
-            background: white;
-            border-radius: 16px;
-            padding: 22px 24px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-            transition: transform 0.2s, box-shadow 0.2s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .kpi-card:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow);
-        }
-
-        .kpi-card::before {
-            content: '';
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            height: 4px;
+            z-index: 1000;
         }
-
-        .kpi-card.orange::before {
-            background: linear-gradient(90deg, var(--orange), var(--orange-light));
-        }
-
-        .kpi-card.blue::before {
-            background: linear-gradient(90deg, var(--blue), var(--blue-light));
-        }
-
-        .kpi-card.green::before {
-            background: linear-gradient(90deg, var(--green), #b8e6ba);
-        }
-
-        .kpi-card.purple::before {
-            background: linear-gradient(90deg, var(--lavender), #d1c4e9);
-        }
-
-        .kpi-label {
-            font-size: 0.72rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
-        }
-
-        .kpi-value {
-            font-size: 2.2rem;
-            font-weight: 900;
-            line-height: 1.1;
-        }
-
-        .kpi-value.orange {
-            color: var(--orange-dark);
-        }
-
-        .kpi-value.blue {
-            color: var(--blue-dark);
-        }
-
-        .kpi-value.green {
-            color: var(--green-dark);
-        }
-
-        .kpi-value.purple {
-            color: #7e57c2;
-        }
-
-        .kpi-sub {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            margin-top: 4px;
-        }
-
-        .kpi-trend {
-            font-size: 0.7rem;
-            font-weight: 700;
-            margin-top: 6px;
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 100px;
-        }
-
-        .kpi-trend.up {
-            background: #e6f9e6;
-            color: var(--green-dark);
-        }
-
-        .kpi-trend.down {
-            background: #fde8e8;
-            color: #c0392b;
-        }
-
-        .dash-section {
-            background: white;
-            border-radius: 16px;
-            padding: 24px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-            margin-bottom: 22px;
-        }
-
-        .dash-section h3 {
-            font-size: 0.85rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-secondary);
-            margin-bottom: 18px;
-        }
-
-        /* Bar chart */
-        .bar-chart {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .bar-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .bar-label {
-            width: 120px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            flex-shrink: 0;
-        }
-
-        .bar-track {
-            flex: 1;
-            height: 28px;
-            background: #f0f0f5;
-            border-radius: 14px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .bar-fill {
-            height: 100%;
-            border-radius: 14px;
-            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            padding-left: 12px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            color: white;
-        }
-
-        .bar-fill.orange {
-            background: linear-gradient(90deg, var(--orange), var(--orange-light));
-        }
-
-        .bar-fill.blue {
-            background: linear-gradient(90deg, var(--blue), var(--blue-light));
-        }
-
-        .bar-fill.green {
-            background: linear-gradient(90deg, var(--green), #b8e6ba);
-        }
-
-        /* Table */
-        .dash-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-        }
-
-        .dash-table thead th {
-            font-size: 0.7rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: var(--text-secondary);
-            padding: 10px 14px;
-            text-align: left;
-            border-bottom: 2px solid #eee;
-        }
-
-        .dash-table tbody td {
-            padding: 12px 14px;
-            font-size: 0.82rem;
-            border-bottom: 1px solid #f5f5f5;
-            vertical-align: middle;
-        }
-
-        .dash-table tbody tr:hover {
-            background: rgba(223, 144, 82, 0.04);
-        }
-
-        .dash-table .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 6px;
-        }
-
-        .dash-table .status-dot.aktiv {
-            background: var(--green);
-        }
-
-        .dash-table .status-dot.wartend {
-            background: #f0c040;
-        }
-
-        .dash-table .status-dot.pausiert {
-            background: #ccc;
-        }
-
-        .dash-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 22px;
-            margin-bottom: 22px;
-        }
-
-        @media (max-width: 900px) {
-            .dash-row {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* ── Person Detail Panel ────────────────────── */
-        .detail-overlay {
+        .dock {
             position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.35);
-            z-index: 2000;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 1.5rem;
+            padding: 8px;
+            display: flex;
+            gap: 12px;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .dock.hidden {
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.3s;
+            transform: translateX(-50%) translateY(100px);
         }
-
-        .detail-overlay.open {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .detail-panel {
-            position: fixed;
-            top: 0;
-            right: -520px;
-            width: 500px;
-            max-width: 90vw;
-            height: 100vh;
-            background: white;
-            z-index: 2001;
-            box-shadow: -8px 0 40px rgba(0, 0, 0, 0.15);
-            transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-            overflow-y: auto;
-        }
-
-        .detail-panel.open {
-            right: 0;
-        }
-
-        .detail-close {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            width: 36px;
-            height: 36px;
-            border: none;
-            border-radius: 50%;
-            background: #f0f0f5;
-            font-size: 1.1rem;
-            cursor: pointer;
+        .dock-item {
+            width: 60px;
+            height: 60px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 1rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.2s;
-            z-index: 1;
-        }
-
-        .detail-close:hover {
-            background: #e0e0e8;
-        }
-
-        .detail-hero {
-            padding: 32px 28px 20px;
-            display: flex;
-            align-items: center;
-            gap: 18px;
-            border-bottom: 1px solid #f0f0f5;
-        }
-
-        .detail-hero-avatar {
-            width: 64px;
-            height: 64px;
-        }
-
-        .detail-hero-name {
-            font-size: 1.3rem;
-            font-weight: 900;
-        }
-
-        .detail-hero-role {
-            font-size: 0.72rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 3px 10px;
-            border-radius: 100px;
-            display: inline-block;
-            margin-top: 4px;
-        }
-
-        .detail-hero-role.helfer {
-            background: #fff3e6;
-            color: var(--orange-dark);
-        }
-
-        .detail-hero-role.senior {
-            background: #e6f0ff;
-            color: var(--blue-dark);
-        }
-
-        .detail-hero-role.aktiv {
-            background: #e6f9e6;
-            color: var(--green-dark);
-        }
-
-        .detail-body {
-            padding: 24px 28px;
-        }
-
-        .detail-section {
-            margin-bottom: 24px;
-        }
-
-        .detail-section h4 {
-            font-size: 0.75rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-secondary);
-            margin-bottom: 12px;
-        }
-
-        .detail-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        .detail-field {
-            background: #f8f8fb;
-            border-radius: 12px;
-            padding: 12px 14px;
-        }
-
-        .detail-field-label {
-            font-size: 0.65rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: var(--text-secondary);
-            margin-bottom: 4px;
-        }
-
-        .detail-field-value {
-            font-size: 0.88rem;
-            font-weight: 600;
-        }
-
-        .cal-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 12px;
-        }
-
-        .cal-header span {
-            font-size: 0.9rem;
-            font-weight: 700;
-        }
-
-        .cal-nav {
-            border: none;
-            background: #f0f0f5;
-            width: 30px;
-            height: 30px;
-            border-radius: 8px;
+            transition: transform 0.2s ease, margin-bottom 0.2s ease;
             cursor: pointer;
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s;
         }
-
-        .cal-nav:hover {
-            background: #e0e0e8;
-        }
-
-        .cal-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
-            text-align: center;
-        }
-
-        .cal-day-label {
-            font-size: 0.6rem;
-            font-weight: 700;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            padding: 4px 0;
-        }
-
-        .cal-day {
+        .dock-item img {
             width: 100%;
-            aspect-ratio: 1;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.78rem;
-            font-weight: 500;
-            color: var(--text-secondary);
+            height: 100%;
+            object-fit: cover;
+            border-radius: 1rem;
+        }
+        .dock-item:hover {
+            transform: scale(1.2);
+            margin-bottom: 10px;
         }
 
-        .cal-day.today {
-            font-weight: 800;
-            color: var(--text-primary);
-            background: #f0f0f5;
+        /* --- Desktop-Only Icon Styles --- */
+        .desktop-icon {
+            color: white;
+            text-align: center;
+            width: 90px;
+            position: absolute;
+            cursor: grab;
+            z-index: 100;
         }
-
-        .cal-day.visit {
-            background: var(--orange-light);
-            color: var(--orange-dark);
-            font-weight: 700;
+        .desktop-icon .icon-image {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto;
+            border-radius: 0.75rem;
         }
-
-        .cal-day.visit-blue {
-            background: var(--blue-light);
-            color: var(--blue-dark);
-            font-weight: 700;
+        .desktop-icon .fa-folder, .desktop-icon .fa-file-lines, .desktop-icon .fa-image {
+            font-size: 60px;
+            margin: 0 auto;
+            color: #60a5fa;
         }
-
-        .cal-day.empty {
-            visibility: hidden;
+        .desktop-icon p {
+            margin-top: 5px;
+            font-size: 13px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+            word-wrap: break-word;
         }
-
-        .cal-legend {
-            display: flex;
-            gap: 14px;
-            margin-top: 10px;
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-        }
-
-        .cal-legend-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 4px;
-            vertical-align: middle;
-        }
-
-        .visit-log {
+        
+        /* --- Mobile-First Window Styles --- */
+        .window {
+            position: fixed; /* Fullscreen on mobile */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(30, 30, 30, 0.8);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            z-index: 500;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
-        .visit-entry {
+        /* --- Desktop Window Overrides (using Tailwind's lg prefix) --- */
+        .lg\:window-desktop {
+            position: absolute !important;
+            top: 100px !important;
+            left: 100px !important;
+            width: 600px !important;
+            height: 70vh !important;
+            border-radius: 12px !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .window-header {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 10px 14px;
-            background: #f8f8fb;
-            border-radius: 12px;
-            font-size: 0.82rem;
-        }
-
-        .visit-date {
-            font-weight: 700;
-            white-space: nowrap;
-            min-width: 70px;
-        }
-
-        .visit-note {
-            color: var(--text-secondary);
-        }
-
-        .visit-type-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
+            padding: 8px;
+            background-color: rgba(60, 60, 60, 0.8);
+            cursor: default; /* Default cursor */
+            color: white;
+            font-size: 14px;
             flex-shrink: 0;
+            position: relative;
+        }
+        .lg\:window-desktop .window-header {
+            cursor: move; /* Draggable cursor on desktop */
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+        }
+        .traffic-lights { display: flex; gap: 8px; margin-right: 8px; }
+        .traffic-light { width: 12px; height: 12px; border-radius: 50%; cursor: pointer; }
+        .close { background-color: #ff5f56; }
+        .minimize { background-color: #ffbd2e; }
+        .maximize { background-color: #27c93f; }
+
+        .window-content {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
         }
 
-        /* Weekly schedule */
-        .schedule-grid {
+        .window-body { padding: 20px; color: #e0e0e0; overflow-y: auto; flex-grow: 1; }
+        .window-body h2 { font-size: 1.2rem; font-weight: 600; color: white; margin-top: 1.5rem; margin-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 0.25rem; }
+        .window-body p { margin-bottom: 0.75rem; line-height: 1.6; }
+        
+        /* --- Mobile Icon Grid & Pages --- */
+        #mobile-view-wrapper {
+            padding-top: 5rem;
+            height: calc(100% - 90px);
+            display: flex;
+            flex-direction: column;
+        }
+        #mobile-icons-container {
+            flex-grow: 1;
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        #mobile-icons-container::-webkit-scrollbar { display: none; }
+        .mobile-page {
+            flex: 0 0 100%;
+            scroll-snap-align: start;
+            padding: 1.5rem 1.25rem;
             display: grid;
-            grid-template-columns: 60px repeat(7, 1fr);
-            gap: 3px;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 1.5rem 1rem;
+            align-content: start;
         }
-
-        .schedule-header {
-            font-size: 0.6rem;
-            font-weight: 700;
-            color: var(--text-secondary);
-            text-transform: uppercase;
+        @media (min-width: 640px) {
+            .mobile-page { grid-template-columns: repeat(4, 1fr); }
+        }
+        .mobile-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: white;
             text-align: center;
-            padding: 6px 2px;
+            cursor: pointer;
         }
-
-        .schedule-time {
-            font-size: 0.65rem;
-            font-weight: 600;
-            color: var(--text-secondary);
+        .mobile-icon .icon-bg {
+            width: 64px;
+            height: 64px;
+            border-radius: 1rem;
             display: flex;
             align-items: center;
+            justify-content: center;
+            background-color: rgba(255,255,255,0.1);
         }
+        .mobile-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 1rem;
+        }
+        .mobile-icon .fa-folder, .mobile-icon .fa-file-lines, .mobile-icon .fa-image {
+            font-size: 32px;
+            color: #60a5fa;
+        }
+        .mobile-icon p {
+            font-size: 12px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+            word-wrap: break-word;
+            width: 80px;
+        }
+        #pagination-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            padding: 1rem 0;
+        }
+        #pagination-dots { display: flex; justify-content: center; gap: 8px; }
+        .pagination-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.4);
+            transition: background-color 0.3s ease;
+        }
+        .pagination-dot.active { background-color: rgba(255, 255, 255, 0.9); }
+        .pagination-arrow {
+            color: white; background: none; border: none; font-size: 1rem;
+            cursor: pointer; opacity: 0.7; transition: opacity 0.2s;
+        }
+        .pagination-arrow:hover { opacity: 1; }
+        .pagination-arrow.hidden { opacity: 0; pointer-events: none; }
 
-        .schedule-cell {
-            height: 28px;
-            border-radius: 6px;
-            background: #f5f5f8;
-        }
-
-        .schedule-cell.filled-helfer {
-            background: linear-gradient(135deg, var(--orange-light), #f5c89a);
-            border: 1px solid var(--orange);
-        }
-
-        .schedule-cell.filled-senior {
-            background: linear-gradient(135deg, var(--blue-light), #a8c8e8);
-            border: 1px solid var(--blue);
-        }
-
-        .schedule-cell.filled-aktiv {
-            background: linear-gradient(135deg, #c8eeca, #b8e6ba);
-            border: 1px solid var(--green);
-        }
-
-        .tandem-tooltip {
-            background: white;
-            border: 1px solid #10b981;
-            border-radius: 4px;
-            padding: 2px 6px;
-            font-weight: bold;
-            font-size: 11px;
-            opacity: 0.9 !important;
-            color: #10b981;
-        }
+        /* --- Duolingo Window Styles --- */
+        .duolingo-body { background-color: #ffffff; color: #4c4c4c; display: flex; flex-direction: column; align-items: center; padding: 1.5rem; }
+        .duolingo-progress-bar { width: 100%; height: 16px; background-color: #e5e5e5; border-radius: 8px; overflow: hidden; border: 2px solid #e5e5e5; }
+        .duolingo-progress { width: 60%; height: 100%; background-color: #58cc02; border-radius: 6px; }
+        .duolingo-mascot-container { display: flex; align-items: center; gap: 1rem; margin-top: 2rem; width: 100%; }
+        .duolingo-speech-bubble { background-color: #ffffff; border: 2px solid #e5e5e5; border-radius: 1rem; padding: 1rem; font-weight: 700; font-size: 1.1rem; position: relative; }
+        .duolingo-speech-bubble::before { content: ''; position: absolute; left: -10px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-top: 10px solid transparent; border-bottom: 10px solid transparent; border-right: 10px solid #e5e5e5; }
+        .duolingo-options { width: 100%; margin-top: 2rem; display: flex; flex-direction: column; gap: 0.75rem; }
+        .duolingo-option { display: flex; align-items: center; gap: 1rem; width: 100%; padding: 1rem; border: 2px solid #e5e5e5; border-bottom-width: 4px; border-radius: 1rem; font-weight: 700; cursor: pointer; transition: background-color 0.2s, border-color 0.2s; }
+        .duolingo-option:hover { background-color: #f7f7f7; }
+        .duolingo-option.selected { background-color: #d7ffb8; border-color: #58cc02; }
+        .duolingo-option.correct { background-color: #d7ffb8; border-color: #58cc02; color: #58a700; }
+        .duolingo-option.incorrect { background-color: #ffdfe0; border-color: #ff4b4b; color: #ea2b2b; animation: shake 0.5s; }
+        .duolingo-continue-btn { width: 100%; margin-top: auto; padding: 1rem; background-color: #58cc02; color: white; font-weight: 700; text-transform: uppercase; border-radius: 1rem; border-bottom: 4px solid #58a700; cursor: pointer; opacity: 0.5; pointer-events: none; transition: opacity 0.2s; }
+        .duolingo-continue-btn.active { opacity: 1; pointer-events: auto; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        
+        /* --- Tinder Swipe App Styles --- */
+        .tinder-body { display: flex; flex-direction: column; height: 100%; padding: 0; background-color: #f7f7f7; overflow: hidden; }
+        .tinder-header { background-color: #fff; padding: 10px; text-align: center; border-bottom: 1px solid #e8e8e8; flex-shrink: 0; }
+        .tinder-header img { height: 30px; }
+        .tinder-stack { flex-grow: 1; display: flex; align-items: center; justify-content: center; position: relative; }
+        .tinder-card { background-color: #fff; width: 85%; height: 80%; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.12); position: absolute; display: flex; flex-direction: column; overflow: hidden; transition: transform 0.4s ease, opacity 0.4s ease; cursor: grab; }
+        .tinder-card.dragging { transition: none; }
+        .tinder-card-img { width: 100%; height: 70%; object-fit: cover; }
+        .tinder-card-info { padding: 15px; }
+        .tinder-card-info h3 { font-size: 1.5rem; font-weight: 700; color: #333; }
+        .tinder-card-info p { font-size: 1rem; color: #666; }
+        .tinder-controls { display: flex; justify-content: space-around; padding: 15px; flex-shrink: 0; }
+        .tinder-btn { background-color: #fff; border: 1px solid #e8e8e8; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 2rem; box-shadow: 0 2px 6px rgba(0,0,0,0.1); cursor: pointer; }
+        .tinder-btn.like { color: #4bde97; }
+        .tinder-btn.dislike { color: #fd5068; }
     </style>
 </head>
+<body class="bg-black">
 
-<body>
+    <video id="video-bg" autoplay loop muted playsinline>
+        <source src="https://ik.imagekit.io/ex6ksvxsvk/website%20background%20vid.mp4?updatedAt=1752664266524" type="video/mp4">
+    </video>
 
-    <div class="header">
-        <svg class="header-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <path
-                d="M50 88 C25 65, 5 50, 5 30 C5 15, 18 5, 32 5 C40 5, 46 10, 50 16 C54 10, 60 5, 68 5 C82 5, 95 15, 95 30 C95 50, 75 65, 50 88Z"
-                fill="var(--orange)" stroke="#222" stroke-width="3" />
-            <path
-                d="M38 72 C28 58, 18 50, 18 38 C18 30, 25 24, 31 24 C34 24, 37 26, 38 28 C39 26, 42 24, 45 24 C51 24, 58 30, 58 38 C58 50, 48 58, 38 72Z"
-                fill="var(--blue)" stroke="#222" stroke-width="2" opacity="0.9" />
-            <path
-                d="M62 68 C54 58, 46 52, 46 42 C46 36, 51 31, 56 31 C58 31, 61 33, 62 35 C63 33, 66 31, 68 31 C73 31, 78 36, 78 42 C78 52, 70 58, 62 68Z"
-                fill="var(--green)" stroke="#222" stroke-width="2" opacity="0.85" />
-        </svg>
-        <div>
-            <h1>Helferherz Karte</h1>
-            <p>Helfer:innen &amp; Senior:innen in Hannover-List</p>
-        </div>
-        <div class="view-toggle">
-            <button class="view-btn active" id="btnKarte" onclick="switchView('karte')">🗺️ Karte</button>
-            <button class="view-btn" id="btnDashboard" onclick="switchView('dashboard')">📊 Dashboard</button>
+    <!-- Menu Bar -->
+    <div class="menu-bar px-4 py-1 text-sm hidden lg:flex">
+        <div class="flex justify-between items-center w-full">
+            <div class="flex items-center gap-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-apple" viewBox="0 0 16 16"><path d="M11.182.008C10.148-.03 9.923.023 8.857 1.18c-1.066 1.156-.902 2.482-.878 2.516s.579.09 1.672-.93c1.092-1.02 1.869-2.059 2.354-2.468C12.433.056 12.318 0 11.182.007Zm.622 1.422a3.48 3.48 0 0 0-2.233 2.233c.213.01.426.01.639.01.213 0 .426 0 .64-.01A3.48 3.48 0 0 0 11.804 1.43Z"/><path d="M8 1a2.5 2.5 0 0 1 2.5 2.5A2.5 2.5 0 0 1 8 6a2.5 2.5 0 0 1-2.5-2.5A2.5 2.5 0 0 1 8 1Zm0 9.5A2.5 2.5 0 0 1 5.5 13a2.5 2.5 0 0 1 2.5 2.5A2.5 2.5 0 0 1 8 13a2.5 2.5 0 0 1 2.5-2.5A2.5 2.5 0 0 1 8 10.5Z"/><path d="M4.176 5.633A6.5 6.5 0 0 0 8 15a6.5 6.5 0 0 0 3.824-9.367c.213.01.426.01.64.01.213 0 .426 0 .639-.01A6.5 6.5 0 0 0 16 8a6.5 6.5 0 0 0-6.5-6.5A6.5 6.5 0 0 0 3.176 8c0 .213.01.426.01.64 0 .213 0 .426-.01.639A6.5 6.5 0 0 0 4.176 5.633Z"/></svg>
+                <span class="font-bold hidden sm:inline">Finder</span>
+                <span class="hidden sm:inline">File</span>
+                <span class="hidden sm:inline">Edit</span>
+                <span class="hidden sm:inline">View</span>
+            </div>
+            <div id="time" class="font-medium"></div>
         </div>
     </div>
 
-    <div class="app">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="stats" id="stats"></div>
-                <div class="filters" id="filters"></div>
-            </div>
-            <div class="person-list" id="personList"></div>
-        </aside>
 
-        <div class="map-container">
-            <div id="map"></div>
-            <div class="legend">
-                <h4>Legende</h4>
-                <div class="legend-item">
-                    <svg class="legend-heart" viewBox="0 0 100 100">
-                        <path
-                            d="M50 88C25 65 5 50 5 30 5 15 18 5 32 5c8 0 14 5 18 11C54 10 60 5 68 5c14 0 27 10 27 25 0 20-20 35-45 58z"
-                            fill="#df9052" stroke="#222" stroke-width="4" />
-                    </svg>
-                    Helfer:in
-                </div>
-                <div class="legend-item">
-                    <svg class="legend-heart" viewBox="0 0 100 100">
-                        <path
-                            d="M50 88C25 65 5 50 5 30 5 15 18 5 32 5c8 0 14 5 18 11C54 10 60 5 68 5c14 0 27 10 27 25 0 20-20 35-45 58z"
-                            fill="#5b9bd5" stroke="#222" stroke-width="4" />
-                    </svg>
-                    Senior:in
-                </div>
-                <div class="legend-item">
-                    <svg class="legend-heart" viewBox="0 0 100 100">
-                        <path
-                            d="M50 88C25 65 5 50 5 30 5 15 18 5 32 5c8 0 14 5 18 11C54 10 60 5 68 5c14 0 27 10 27 25 0 20-20 35-45 58z"
-                            fill="#7ec882" stroke="#222" stroke-width="4" />
-                    </svg>
-                    Aktive Helfer:in
-                </div>
+
+    <!-- Mobile View Wrapper (Hidden on desktop) -->
+    <div id="mobile-view-wrapper" class="lg:hidden">
+        <div id="mobile-icons-container">
+            <!-- Page 1 -->
+            <div class="mobile-page">
+                <div id="koplin-icon-mobile" class="mobile-icon"><div class="icon-bg"><i class="fas fa-folder"></i></div><p>Dr. Koplin</p></div>
+                <div id="tinder-icon-mobile" class="mobile-icon"><div class="icon-bg"><i class="fas fa-folder"></i></div><p>Tinder</p></div>
+                <div id="modulor-icon-mobile" class="mobile-icon"><div class="icon-bg"><i class="fas fa-folder"></i></div><p>Modulor</p></div>
+                <div id="duolingo-icon-mobile" class="mobile-icon"><div class="icon-bg"><img src="https://ik.imagekit.io/ex6ksvxsvk/duolingo.png?updatedAt=1753447361224" alt="Duolingo Icon"></div><p>Duolingo</p></div>
+                <div data-url="https://ik.imagekit.io/ex6ksvxsvk/CV%20Leonard%20Zirk%20Juli%202025.pdf?updatedAt=1753119910183" class="mobile-icon link-icon"><div class="icon-bg"><img src="https://ik.imagekit.io/ex6ksvxsvk/pdfdownload.png?updatedAt=1753096977321" alt="CV Icon"></div><p>CV Leonard Zirk</p></div>
+                <div data-url="https://www.linkedin.com/in/leonard-zirk-9687ba223/" class="mobile-icon link-icon"><div class="icon-bg"><img src="https://ik.imagekit.io/ex6ksvxsvk/linkedin.png?updatedAt=1752678709680" alt="LinkedIn Icon"></div><p>LinkedIn</p></div>
+                <div data-url="https://github.com/leonardzirk" class="mobile-icon link-icon"><div class="icon-bg"><img src="https://ik.imagekit.io/ex6ksvxsvk/github.png?updatedAt=1752679143531" alt="GitHub Icon" class="rounded-full"></div><p>GitHub</p></div>
+                <div data-url="https://www.instagram.com/leonardzirk_unoffical" class="mobile-icon link-icon"><div class="icon-bg"><img src="https://ik.imagekit.io/ex6ksvxsvk/instagramicon.webp?updatedAt=1752678971026" alt="Instagram Icon"></div><p>Instagram</p></div>
+                <div data-url="https://www.tiktok.com/@leonardzirk" class="mobile-icon link-icon"><div class="icon-bg"><img src="https://ik.imagekit.io/ex6ksvxsvk/tik%20tok%20icon.png?updatedAt=1752678704069" alt="TikTok Icon"></div><p>TikTok</p></div>
             </div>
+            <!-- Page 2 -->
+            <div class="mobile-page">
+                <div data-url="https://substack.com/@leonardzirk?utm_source=user-menu" class="mobile-icon link-icon"><div class="icon-bg"><img src="https://ik.imagekit.io/ex6ksvxsvk/substack.png?updatedAt=1752679004979" class="rounded-md" alt="Substack Icon"></div><p>Substack</p></div>
+                <div data-url="https://klipp-linding.science/index.php/en/" class="mobile-icon link-icon"><div class="icon-bg"><img src="https://ik.imagekit.io/ex6ksvxsvk/klipplindinglab_256.png?updatedAt=1752678845945" class="rounded-md" alt="Klipp Linding Lab Icon"></div><p>Klipp Linding Lab</p></div>
+            </div>
+        </div>
+        <div id="pagination-container">
+            <button id="prev-page" class="pagination-arrow hidden"><i class="fas fa-chevron-left"></i></button>
+            <div id="pagination-dots"></div>
+            <button id="next-page" class="pagination-arrow"><i class="fas fa-chevron-right"></i></button>
         </div>
     </div>
 
-    <!-- Dashboard View -->
-    <div class="dashboard" id="dashboardView">
-        <div class="dash-grid" id="kpiCards"></div>
-        <div class="dash-row">
-            <div class="dash-section">
-                <h3>📊 Verteilung</h3>
-                <div class="bar-chart" id="barChart"></div>
-            </div>
-            <div class="dash-section">
-                <h3>🤝 Matching-Status</h3>
-                <div class="bar-chart" id="matchChart"></div>
-            </div>
-        </div>
-        <div class="dash-section">
-            <h3>👥 Alle Personen</h3>
-            <table class="dash-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Rolle</th>
-                        <th>Sprachen</th>
-                        <th>Verfügbarkeit</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody id="dashTable"></tbody>
-            </table>
-        </div>
-    </div>
+    <!-- Windows -->
+    <div id="cv-window" class="window hidden"><div class="window-content"></div></div>
+    <div id="contact-window" class="window hidden"><div class="window-content"></div></div>
+    <div id="koplin-window" class="window hidden"><div class="window-content"></div></div>
+    <div id="readme-window" class="window hidden"><div class="window-content"></div></div>
+    <div id="readme-desktop-window" class="window hidden"><div class="window-content"></div></div>
+    <div id="duolingo-window" class="window hidden"><div class="window-content"></div></div>
+    <div id="tinder-window" class="window hidden"><div class="window-content"></div></div>
+    <div id="modulor-window" class="window hidden"><div class="window-content"></div></div>
+    <div id="tinder-party-window" class="window hidden"><div class="window-content"></div></div>
+    <div id="tinder-swipe-window" class="window hidden"><div class="window-content"></div></div>
 
-    <!-- Person Detail Panel -->
-    <div class="detail-overlay" id="detailOverlay" onclick="closeDetail()"></div>
-    <div class="detail-panel" id="detailPanel">
-        <button class="detail-close" onclick="closeDetail()">✕</button>
-        <div id="detailContent"></div>
+    <!-- Dock -->
+    <div class="dock">
+        <div id="cv-dock-icon" class="dock-item"><img src="https://ik.imagekit.io/ex6ksvxsvk/resume.png?updatedAt=1753120155625" alt="CV"></div>
+        <div id="contact-dock-icon" class="dock-item"><img src="https://ik.imagekit.io/ex6ksvxsvk/mailicon.png?updatedAt=1752667698506" alt="Mail"></div>
     </div>
 
     <script>
-        // ── Heart SVG Marker ──────────────────────────────────
-        function heartSVG(color, size = 36) {
-            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 100 100">
-        <filter id="shadow-${color.replace('#', '')}" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="rgba(0,0,0,0.25)"/>
-        </filter>
-        <path filter="url(#shadow-${color.replace('#', '')})" d="M50 88C25 65 5 50 5 30 5 15 18 5 32 5c8 0 14 5 18 11C54 10 60 5 68 5c14 0 27 10 27 25 0 20-20 35-45 58z"
-              fill="${color}" stroke="#222" stroke-width="4" stroke-linejoin="round"/>
-        <ellipse cx="38" cy="30" rx="5" ry="6" fill="#222"/>
-        <ellipse cx="62" cy="30" rx="5" ry="6" fill="#222"/>
-        <ellipse cx="40" cy="28" rx="2" ry="2.5" fill="white"/>
-        <ellipse cx="64" cy="28" rx="2" ry="2.5" fill="white"/>
-        <path d="M38 48 Q50 58 62 48" fill="none" stroke="#222" stroke-width="3" stroke-linecap="round"/>
-    </svg>`;
-            return L.divIcon({
-                html: svg,
-                className: '',
-                iconSize: [size, size],
-                iconAnchor: [size / 2, size],
-                popupAnchor: [0, -size + 8]
-            });
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const timeEl = document.getElementById('time');
+            let isDesktop = window.innerWidth >= 1024;
+            const dock = document.querySelector('.dock');
 
-        function popupAvatarSVG(color) {
-            return `<svg class="popup-avatar" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <path d="M50 88C25 65 5 50 5 30 5 15 18 5 32 5c8 0 14 5 18 11C54 10 60 5 68 5c14 0 27 10 27 25 0 20-20 35-45 58z"
-              fill="${color}" stroke="#222" stroke-width="4" stroke-linejoin="round"/>
-        <ellipse cx="38" cy="30" rx="5" ry="6" fill="#222"/>
-        <ellipse cx="62" cy="30" rx="5" ry="6" fill="#222"/>
-        <ellipse cx="40" cy="28" rx="2" ry="2.5" fill="white"/>
-        <ellipse cx="64" cy="28" rx="2" ry="2.5" fill="white"/>
-        <path d="M38 48 Q50 58 62 48" fill="none" stroke="#222" stroke-width="3" stroke-linecap="round"/>
-    </svg>`;
-        }
-
-        function sidebarAvatarSVG(color) {
-            return `<svg class="person-avatar" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <path d="M50 88C25 65 5 50 5 30 5 15 18 5 32 5c8 0 14 5 18 11C54 10 60 5 68 5c14 0 27 10 27 25 0 20-20 35-45 58z"
-              fill="${color}" stroke="#222" stroke-width="3.5" stroke-linejoin="round"/>
-        <ellipse cx="38" cy="30" rx="4.5" ry="5.5" fill="#222"/>
-        <ellipse cx="62" cy="30" rx="4.5" ry="5.5" fill="#222"/>
-        <ellipse cx="40" cy="28" rx="1.8" ry="2.2" fill="white"/>
-        <ellipse cx="64" cy="28" rx="1.8" ry="2.2" fill="white"/>
-        <path d="M38 48 Q50 58 62 48" fill="none" stroke="#222" stroke-width="2.5" stroke-linecap="round"/>
-    </svg>`;
-        }
-
-        // ── Location Privacy: Randomize Senior Positions ──────
-        // ~100m displacement radius for senior privacy
-        // At latitude ~52°: 1° lat ≈ 111,320m, 1° lng ≈ 67,800m
-        function displaceLatLng(lat, lng, radiusMeters = 100) {
-            const angle = Math.random() * 2 * Math.PI;
-            const r = Math.sqrt(Math.random()) * radiusMeters; // uniform distribution in circle
-            const dLat = (r * Math.cos(angle)) / 111320;
-            const dLng = (r * Math.sin(angle)) / (111320 * Math.cos(lat * Math.PI / 180));
-            return { lat: lat + dLat, lng: lng + dLng };
-        }
-
-        // ── Real CRM Data (from helfer_crm.csv) ─────────────────
-        // Only includes people with VERIFIED address + data from registration forms
-        const people = [
-            {
-                id: 1,
-                name: "Christiane Alvi",
-                type: "aktiv",
-                color: "#7ec882",
-                lat: 52.3973,
-                lng: 9.59718,
-                bio: "Alltagsbegleitung",
-                sprachen: "Deutsch",
-                zeitfenster: [],
-                tandemIds: [
-                    14
-                ],
-                status: "aktiv"
-            },
-            {
-                id: 2,
-                name: "Brigitte Basedow",
-                type: "aktiv",
-                color: "#7ec882",
-                lat: 52.3846,
-                lng: 9.76845,
-                bio: "Service Kraft, Pflegehilfskraft",
-                sprachen: "Deutsch",
-                zeitfenster: [],
-                tandemIds: [
-                    9
-                ],
-                status: "aktiv"
-            },
-            {
-                id: 3,
-                name: "Dagmar Jörn",
-                type: "helfer",
-                color: "#df9052",
-                lat: 52.43615,
-                lng: 9.73206,
-                bio: "Alltagsbegleitung",
-                sprachen: "Deutsch",
-                zeitfenster: [],
-                tandemIds: [],
-                status: "inaktiv"
-            },
-            {
-                id: 4,
-                name: "Heike Hering",
-                type: "helfer",
-                color: "#df9052",
-                lat: 52.38677,
-                lng: 9.74823,
-                bio: "Alltagsbegleitung",
-                sprachen: "Deutsch",
-                zeitfenster: [],
-                tandemIds: [],
-                status: "inaktiv"
-            },
-            {
-                id: 5,
-                name: "Susanne Hildebrandt",
-                type: "helfer",
-                color: "#df9052",
-                lat: 52.38249,
-                lng: 9.74167,
-                bio: "Service Kraft, Pflegehilfskraft",
-                sprachen: "Deutsch",
-                zeitfenster: [],
-                tandemIds: [],
-                status: "inaktiv"
-            },
-            {
-                id: 6,
-                name: "Veronika Heigl",
-                type: "senior",
-                color: "#5b9bd5",
-                lat: 52.36811,
-                lng: 9.76099,
-                bio: "Alltagsbegleitung",
-                sprachen: "Deutsch",
-                zeitfenster: [],
-                tandemIds: [
-                    19
-                ],
-                status: "betreut"
-            },
-            {
-                id: 7,
-                name: "Werner Voss",
-                type: "senior",
-                color: "#5b9bd5",
-                lat: 52.38305,
-                lng: 9.77007,
-                bio: "Alltagsbegleitung",
-                sprachen: "Deutsch",
-                zeitfenster: [],
-                tandemIds: [
-                    21
-                ],
-                status: "betreut"
-            },
-            {
-                id: 8,
-                name: "Marlene Schölzel",
-                type: "senior",
-                color: "#5b9bd5",
-                lat: 52.39095,
-                lng: 9.74712,
-                bio: "Alltagsbegleitung",
-                sprachen: "Deutsch",
-                zeitfenster: [],
-                tandemIds: [],
-                status: "wartend"
-            },
-            {
-                id: 9,
-                name: "Manfred Roesler",
-                type: "senior",
-                color: "#5b9bd5",
-                lat: 52.39229,
-                lng: 9.75086,
-                bio: "Alltagsbegleitung",
-                sprachen: "Deutsch",
-                zeitfenster: [],
-                tandemIds: [
-                    2
-                ],
-                status: "betreut"
-            },
-            {
-                id: 10,
-                name: "Renate Neumann",
-                type: "senior",
-                color: "#5b9bd5",
-                lat: 52.38814,
-                lng: 9.7452,
-                bio: "Alltagsbegleitung",
-                sprachen: "Deutsch",
-                zeitfenster: [],
-                tandemIds: [
-                    18
-                ],
-                status: "betreut"
-            },
-            {
-                id: 11,
-                name: "Ansorge Bärbel",
-                type: "senior",
-                color: "#5b9bd5",
-                lat: 52.41159,
-                lng: 9.80038,
-                bio: "Alltagsbegleitung",
-                sprachen: "Deutsch",
-                zeitfenster: [],
-                tandemIds: [],
-                status: "wartend"
-            },
-            {
-                id: 12,
-                name: "Dodegger Klaus",
-                type: "senior",
-                color: "#5b9bd5",
-                lat: 52.39268,
-                lng: 9.75491,
-                bio: "Alltagsbegleitung",
-                sprachen: "Deutsch",
-                zeitfenster: [],
-                tandemIds: [],
-                status: "wartend"
-            },
-            {
-                id: 13,
-                name: "Simsek Aynur",
-                type: "senior",
-                color: "#5b9bd5",
-                lat: 52.41459,
-                lng: 9.73229,
-                bio: "Alltagsbegleitung",
-                sprachen: "Deutsch",
-                zeitfenster: [],
-                tandemIds: [],
-                status: "wartend"
-            },
-            {
-                id: 14,
-                name: "Walter Janzen",
-                type: "senior",
-                color: "#5b9bd5",
-                lat: 52.34975,
-                lng: 9.71768,
-                bio: "Alltagsbegleitung",
-                sprachen: "Deutsch",
-                zeitfenster: [],
-                tandemIds: [
-                    1
-                ],
-                status: "betreut"
-            },
-            {
-                id: 15,
-                name: "Waltraud Heinrichs",
-                type: "senior",
-                color: "#5b9bd5",
-                lat: 52.39115,
-                lng: 9.74266,
-                bio: "Alltagsbegleitung",
-                sprachen: "Deutsch",
-                zeitfenster: [],
-                tandemIds: [
-                    19
-                ],
-                status: "betreut"
-            },
-            {
-                id: 16,
-                name: "Pamelo Dube",
-                type: "senior",
-                color: "#5b9bd5",
-                lat: 52.39919,
-                lng: 9.78037,
-                bio: "Alltagsbegleitung",
-                sprachen: "Deutsch",
-                zeitfenster: [],
-                tandemIds: [
-                    21
-                ],
-                status: "betreut"
-            },
-            {
-                id: 17,
-                name: "Nadezhda Mihaylova",
-                type: "helfer",
-                color: "#df9052",
-                lat: 52.36622,
-                lng: 9.66853,
-                bio: "Alltagsbegleitung",
-                sprachen: "Deutsch",
-                zeitfenster: [],
-                tandemIds: [],
-                status: "inaktiv"
-            },
-            {
-                id: 18,
-                name: "Natela Gündüz",
-                type: "aktiv",
-                color: "#7ec882",
-                lat: 52.4404,
-                lng: 9.7394,
-                bio: "Alltagsbegleitung",
-                sprachen: "Deutsch",
-                zeitfenster: [],
-                tandemIds: [
-                    10
-                ],
-                status: "aktiv"
-            },
-            {
-                id: 19,
-                name: "Maria Gündüz",
-                type: "aktiv",
-                color: "#7ec882",
-                lat: 52.44006,
-                lng: 9.74206,
-                bio: "Alltagsbegleitung",
-                sprachen: "Deutsch",
-                zeitfenster: [],
-                tandemIds: [
-                    6,
-                    15
-                ],
-                status: "aktiv"
-            },
-            {
-                id: 20,
-                name: "Susanne Schreiber",
-                type: "helfer",
-                color: "#df9052",
-                lat: 52.39947,
-                lng: 9.77813,
-                bio: "Alltagsbegleitung",
-                sprachen: "Deutsch",
-                zeitfenster: [],
-                tandemIds: [],
-                status: "inaktiv"
-            },
-            {
-                id: 21,
-                name: "Aleksandra Canik",
-                type: "aktiv",
-                color: "#7ec882",
-                lat: 52.40448,
-                lng: 9.70992,
-                bio: "Alltagsbegleitung",
-                sprachen: "Deutsch",
-                zeitfenster: [],
-                tandemIds: [
-                    16,
-                    7
-                ],
-                status: "aktiv"
-            },
-            {
-                id: 22,
-                name: "Ingrit Berger",
-                type: "helfer",
-                color: "#df9052",
-                lat: 52.39069,
-                lng: 9.75157,
-                bio: "Alltagsbegleitung",
-                sprachen: "Deutsch",
-                zeitfenster: [],
-                tandemIds: [],
-                status: "inaktiv"
+            function updateTime() {
+                const now = new Date();
+                const options = { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+                timeEl.textContent = now.toLocaleDateString('en-US', options).replace(',', '');
             }
-        ];
+            updateTime();
+            setInterval(updateTime, 1000 * 60);
 
-        // ── State ─────────────────────────────────────────────
-        let activeFilters = { helfer: true, senioren: true, aktiv: true, tandems: false };
-        let activePersonId = null;
-        let markers = {};
-
-        // Pre-compute displaced positions for seniors (privacy)
-        const displacedPositions = {};
-        people.forEach(person => {
-            if (person.type === 'senior') {
-                displacedPositions[person.id] = displaceLatLng(person.lat, person.lng, 100);
-            }
-        });
-
-        // ── Map Init ──────────────────────────────────────────
-        const map = L.map('map', {
-            zoomControl: false
-        }).setView([52.3855, 9.7500], 16);
-
-        L.control.zoom({ position: 'topright' }).addTo(map);
-
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
-            subdomains: 'abcd',
-            maxZoom: 19
-        }).addTo(map);
-
-        // ── Render Functions ──────────────────────────────────
-        function getTypeLabel(type) {
-            return type === 'helfer' ? 'Helfer:in' : type === 'senior' ? 'Senior:in' : 'Aktive:r Helfer:in';
-        }
-
-        function getFilterKey(type) {
-            return type === 'helfer' ? 'helfer' : type === 'senior' ? 'senioren' : 'aktiv';
-        }
-
-        function getPopupHTML(person) {
-            const typeClass = person.type === 'helfer' ? 'helfer' : person.type === 'senior' ? 'senior' : 'aktiv';
-            return `
-        <div class="popup-card">
-            <div class="popup-header">
-                ${popupAvatarSVG(person.color)}
-                <div>
-                    <div class="popup-name">${person.name}</div>
-                    <span class="popup-type ${typeClass}">${getTypeLabel(person.type)}</span>
-                </div>
-            </div>
-            <p class="popup-bio">${person.bio}</p>
-            <div class="popup-meta">
-                <div class="popup-meta-item">
-                    <span class="popup-meta-icon">🗣️</span>
-                    <span>${person.sprachen}</span>
-                </div>
-                <div class="popup-meta-item">
-                    <span class="popup-meta-icon">🕐</span>
-                    <span>${formatZeitfenster(person.zeitfenster)}</span>
-                </div>
-            </div>
-        </div>
-    `;
-        }
-
-        function addMarkers() {
-            Object.values(markers).forEach(m => map.removeLayer(m));
-            markers = {};
-
-            people.forEach(person => {
-                const filterKey = getFilterKey(person.type);
-                if (!activeFilters[filterKey]) return;
-
-                // Use displaced position for seniors, original for others
-                const pos = displacedPositions[person.id] || { lat: person.lat, lng: person.lng };
-
-                const marker = L.marker([pos.lat, pos.lng], {
-                    icon: heartSVG(person.color, 40)
-                }).addTo(map);
-
-                marker.bindPopup(getPopupHTML(person), { closeButton: true, maxWidth: 280 });
-
-                marker.on('click', () => {
-                    setActivePerson(person.id);
-                });
-
-                markers[person.id] = marker;
-            });
-        }
-
-        function renderSidebar() {
-            const filtered = people.filter(p => activeFilters[getFilterKey(p.type)]);
-
-            document.getElementById('personList').innerHTML = filtered.map(person => {
-                const typeClass = person.type === 'helfer' ? 'helfer' : person.type === 'senior' ? 'senior' : 'aktiv';
-                return `
-            <div class="person-card ${person.id === activePersonId ? 'active' : ''}"
-                 onclick="panToPerson(${person.id})" id="card-${person.id}">
-                ${sidebarAvatarSVG(person.color)}
-                <div class="person-info">
-                    <h3>${person.name}</h3>
-                    <p>${person.bio.substring(0, 50)}…</p>
-                </div>
-                <span class="person-role ${typeClass}">${getTypeLabel(person.type)}</span>
-            </div>
-        `;
-            }).join('');
-        }
-
-        function renderStats() {
-            const helferCount = people.filter(p => p.type === 'helfer').length;
-            const seniorCount = people.filter(p => p.type === 'senior').length;
-            const aktivCount = people.filter(p => p.type === 'aktiv').length;
-
-            document.getElementById('stats').innerHTML = `
-        <div class="stat-badge helfer"><span class="stat-dot orange"></span>${helferCount} Helfer</div>
-        <div class="stat-badge senioren"><span class="stat-dot blue"></span>${seniorCount} Senioren</div>
-        <div class="stat-badge aktiv"><span class="stat-dot green"></span>${aktivCount} Aktive</div>
-    `;
-        }
-
-        function renderFilters() {
-            document.getElementById('filters').innerHTML = `
-        <button class="filter-btn ${activeFilters.helfer ? 'active-helfer' : ''}"
-                onclick="toggleFilter('helfer')">
-            🟠 Helfer:innen
-        </button>
-        <button class="filter-btn ${activeFilters.senioren ? 'active-senioren' : ''}"
-                onclick="toggleFilter('senioren')">
-            🔵 Senior:innen
-        </button>
-        <button class="filter-btn ${activeFilters.aktiv ? 'active-aktiv' : ''}"
-                onclick="toggleFilter('aktiv')">
-            💚 Aktive Helfer
-        </button>
-        <button class="filter-btn"
-                onclick="toggleFilter('tandems')"
-                style="border-color: #10b981; color: ${activeFilters.tandems ? 'white' : '#10b981'}; background: ${activeFilters.tandems ? '#10b981' : 'white'};">
-            🔗 Tandems & Distanzen
-        </button>
-    `;
-        }
-
-        let tandemLines = [];
-
-        function drawTandems() {
-            tandemLines.forEach(line => map.removeLayer(line));
-            tandemLines = [];
-
-            if (!activeFilters.tandems) return;
-
-            people.forEach(p1 => {
-                if (p1.tandemIds && p1.tandemIds.length > 0) {
-                    p1.tandemIds.forEach(tId => {
-                        const p2 = people.find(x => x.id === tId);
-                        if (p2 && p1.id < p2.id) {
-                            const latlng1 = L.latLng(displacedPositions[p1.id] || { lat: p1.lat, lng: p1.lng });
-                            const latlng2 = L.latLng(displacedPositions[p2.id] || { lat: p2.lat, lng: p2.lng });
-                            const dist = (latlng1.distanceTo(latlng2) / 1000).toFixed(1);
-
-                            const line = L.polyline([latlng1, latlng2], {
-                                color: '#10b981',
-                                weight: 3,
-                                opacity: 0.8,
-                                dashArray: '5, 8'
-                            }).addTo(map);
-
-                            line.bindTooltip(`${dist} km`, {
-                                permanent: true,
-                                direction: 'center',
-                                className: 'tandem-tooltip'
-                            });
-
-                            tandemLines.push(line);
-                        }
-                    });
+            const windows = document.querySelectorAll('.window');
+            function openWindow(windowEl) {
+                windows.forEach(w => w.style.zIndex = 500);
+                windowEl.classList.remove('hidden');
+                windowEl.style.zIndex = 501;
+                if (isDesktop) {
+                    windowEl.classList.add('lg:window-desktop');
+                } else {
+                    windowEl.classList.remove('lg:window-desktop');
+                    if (dock) dock.classList.add('hidden');
                 }
-            });
-        }
-
-        // ── Interactions ──────────────────────────────────────
-        function toggleFilter(type) {
-            activeFilters[type] = !activeFilters[type];
-            render();
-        }
-
-        function panToPerson(id) {
-            const person = people.find(p => p.id === id);
-            if (!person) return;
-            setActivePerson(id);
-            const pos = displacedPositions[id] || { lat: person.lat, lng: person.lng };
-            map.flyTo([pos.lat, pos.lng], 17, { duration: 0.6 });
-            if (markers[id]) markers[id].openPopup();
-        }
-
-        function setActivePerson(id) {
-            activePersonId = id;
-            document.querySelectorAll('.person-card').forEach(c => c.classList.remove('active'));
-            const card = document.getElementById(`card-${id}`);
-            if (card) {
-                card.classList.add('active');
-                card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
-        }
-
-        // ── Initial Render ────────────────────────────────────
-        function render() {
-            renderStats();
-            renderFilters();
-            renderSidebar();
-            addMarkers();
-            drawTandems();
-        }
-
-        render();
-
-        // ── Dashboard ─────────────────────────────────────────
-
-
-        // Demo KPI data
-        const kpis = {
-            besuche_monat: 47,
-            besuche_trend: '+12%',
-            matchings_aktiv: 7,
-            wartezeit_tage: 3,
-            coverage: 85
-        };
-
-        function switchView(view) {
-            const app = document.querySelector('.app');
-            const dash = document.getElementById('dashboardView');
-            const btnK = document.getElementById('btnKarte');
-            const btnD = document.getElementById('btnDashboard');
-
-            if (view === 'dashboard') {
-                app.classList.add('hidden');
-                dash.classList.add('visible');
-                btnK.classList.remove('active');
-                btnD.classList.add('active');
-                renderDashboard();
-            } else {
-                app.classList.remove('hidden');
-                dash.classList.remove('visible');
-                btnK.classList.add('active');
-                btnD.classList.remove('active');
-                map.invalidateSize();
-            }
-        }
-
-        function renderDashboard() {
-            renderKPIs();
-            renderBarChart();
-            renderMatchChart();
-            renderDashTable();
-        }
-
-        function renderKPIs() {
-            const helferCount = people.filter(p => p.type === 'helfer').length;
-            const seniorCount = people.filter(p => p.type === 'senior').length;
-            const typeAktivCount = people.filter(p => p.type === 'aktiv').length;
-            const aktivCount = people.filter(p => p.status === 'aktiv').length;
-
-            document.getElementById('kpiCards').innerHTML = `
-                <div class="kpi-card orange">
-                    <div class="kpi-label">Helfer:innen</div>
-                    <div class="kpi-value orange">${helferCount}</div>
-                    <div class="kpi-sub">${people.filter(p => p.type === 'helfer' && p.status === 'aktiv').length} aktiv</div>
-                </div>
-                <div class="kpi-card blue">
-                    <div class="kpi-label">Senior:innen</div>
-                    <div class="kpi-value blue">${seniorCount}</div>
-                    <div class="kpi-sub">${people.filter(p => p.type === 'senior' && p.status === 'wartend').length} warten auf Matching</div>
-                </div>
-                <div class="kpi-card green">
-                    <div class="kpi-label">Besuche / Monat</div>
-                    <div class="kpi-value green">${kpis.besuche_monat}</div>
-                    <div class="kpi-trend up">↑ ${kpis.besuche_trend} vs. Vormonat</div>
-                </div>
-                <div class="kpi-card purple">
-                    <div class="kpi-label">Aktive Matchings</div>
-                    <div class="kpi-value purple">${kpis.matchings_aktiv}</div>
-                    <div class="kpi-sub">∅ ${kpis.wartezeit_tage} Tage Wartezeit</div>
-                </div>
-                <div class="kpi-card orange">
-                    <div class="kpi-label">Coverage Rate</div>
-                    <div class="kpi-value orange">${kpis.coverage}%</div>
-                    <div class="kpi-sub">Senior:innen mit zugewiesenem Helfer</div>
-                </div>
-                <div class="kpi-card green">
-                    <div class="kpi-label">Aktive Helfer:innen</div>
-                    <div class="kpi-value green">${typeAktivCount}</div>
-                    <div class="kpi-sub">Einsatzbereite Kräfte</div>
-                </div>
-            `;
-        }
-
-        function renderBarChart() {
-            const total = people.length;
-            const helfer = people.filter(p => p.type === 'helfer').length;
-            const senior = people.filter(p => p.type === 'senior').length;
-            const aktiv = people.filter(p => p.type === 'aktiv').length;
-
-            document.getElementById('barChart').innerHTML = `
-                <div class="bar-row">
-                    <span class="bar-label">Helfer:innen</span>
-                    <div class="bar-track"><div class="bar-fill orange" style="width:${(helfer / total * 100).toFixed(0)}%">${helfer}</div></div>
-                </div>
-                <div class="bar-row">
-                    <span class="bar-label">Senior:innen</span>
-                    <div class="bar-track"><div class="bar-fill blue" style="width:${(senior / total * 100).toFixed(0)}%">${senior}</div></div>
-                </div>
-                <div class="bar-row">
-                    <span class="bar-label">Aktive Helfer</span>
-                    <div class="bar-track"><div class="bar-fill green" style="width:${(aktiv / total * 100).toFixed(0)}%">${aktiv}</div></div>
-                </div>
-            `;
-        }
-
-        function renderMatchChart() {
-            const total = people.length;
-            const aktiv = people.filter(p => p.status === 'aktiv').length;
-            const wartend = people.filter(p => p.status === 'wartend').length;
-            const pausiert = people.filter(p => p.status === 'pausiert').length;
-
-            document.getElementById('matchChart').innerHTML = `
-                <div class="bar-row">
-                    <span class="bar-label">🟢 Aktiv</span>
-                    <div class="bar-track"><div class="bar-fill green" style="width:${(aktiv / total * 100).toFixed(0)}%">${aktiv}</div></div>
-                </div>
-                <div class="bar-row">
-                    <span class="bar-label">🟡 Wartend</span>
-                    <div class="bar-track"><div class="bar-fill orange" style="width:${(wartend / total * 100).toFixed(0)}%">${wartend}</div></div>
-                </div>
-                <div class="bar-row">
-                    <span class="bar-label">⏸️ Pausiert</span>
-                    <div class="bar-track"><div class="bar-fill blue" style="width:${(pausiert / total * 100).toFixed(0)}%">${pausiert}</div></div>
-                </div>
-            `;
-        }
-
-        function renderDashTable() {
-            document.getElementById('dashTable').innerHTML = people.map(p => {
-                const role = p.type === 'helfer' ? 'Helfer:in' : p.type === 'senior' ? 'Senior:in' : 'Aktive:r Helfer:in';
-                return `<tr onclick="openDetail(${p.id})" style="cursor:pointer">
-                    <td><strong>${p.name}</strong></td>
-                    <td>${role}</td>
-                    <td>${p.sprachen}</td>
-                    <td>${formatZeitfenster(p.zeitfenster)}</td>
-                    <td><span class="status-dot ${p.status}"></span>${p.status.charAt(0).toUpperCase() + p.status.slice(1)}</td>
-                </tr>`;
-            }).join('');
-        }
-
-        // ── Person Detail Panel ───────────────────────────────
-        // Demo visit data
-        const demoVisits = {
-            1: [{ d: '2026-03-01', note: 'Einkauf begleitet' }, { d: '2026-02-25', note: 'Spaziergang im Park' }, { d: '2026-02-18', note: 'Gemeinsames Kochen' }, { d: '2026-02-11', note: 'Arztbesuch begleitet' }, { d: '2026-03-04', note: 'Geplant: Vorlesen' }],
-            2: [{ d: '2026-02-27', note: 'Besuch von Amira' }, { d: '2026-02-20', note: 'Schach gespielt' }, { d: '2026-02-13', note: 'Spaziergang' }, { d: '2026-03-06', note: 'Geplant: Einkauf' }],
-            3: [{ d: '2026-03-01', note: 'Beratungsgespräch' }, { d: '2026-02-24', note: 'Hausbesuch' }, { d: '2026-02-17', note: 'Formulare ausgefüllt' }, { d: '2026-03-08', note: 'Geplant: Arztbegleitung' }],
-            4: [{ d: '2026-02-26', note: 'Vorgelesen' }, { d: '2026-02-19', note: 'Besuch Fatima' }, { d: '2026-03-05', note: 'Geplant: Spaziergang' }],
-            5: [{ d: '2026-03-01', note: 'Einkauf für Frau L.' }, { d: '2026-02-22', note: 'Wochenmarkt' }, { d: '2026-02-15', note: 'Umzugshilfe' }],
-            6: [{ d: '2026-02-28', note: 'Erzählnachmittag' }, { d: '2026-02-21', note: 'Besuch Carlos' }, { d: '2026-02-14', note: 'Valentinstag-Kaffee' }, { d: '2026-03-07', note: 'Geplant: Fotoalbum' }],
-            7: [{ d: '2026-03-01', note: 'Arztbesuch begleitet' }, { d: '2026-02-22', note: 'Formulare übersetzt' }, { d: '2026-03-08', note: 'Geplant: Apotheke' }],
-            8: [{ d: '2026-02-27', note: 'Technik-Hilfe Tablet' }, { d: '2026-02-20', note: 'Spaziergang' }, { d: '2026-03-06', note: 'Geplant: Videocall Enkel' }],
-            9: [{ d: '2026-03-01', note: 'Koordination 3 Besuche' }, { d: '2026-02-24', note: 'Erstgespräch neuer Helfer' }, { d: '2026-02-17', note: 'Supervision' }],
-            10: [{ d: '2026-02-25', note: 'Arzttermin begleitet' }, { d: '2026-02-18', note: 'Einkauf' }, { d: '2026-03-04', note: 'Geplant: Augenarzt' }]
-        };
-
-        let detailCalMonth = new Date().getMonth();
-        let detailCalYear = new Date().getFullYear();
-        let detailPersonId = null;
-
-        function openDetail(id) {
-            detailPersonId = id;
-            detailCalMonth = new Date().getMonth();
-            detailCalYear = new Date().getFullYear();
-            renderDetailPanel(id);
-            document.getElementById('detailOverlay').classList.add('open');
-            document.getElementById('detailPanel').classList.add('open');
-        }
-
-        function closeDetail() {
-            document.getElementById('detailOverlay').classList.remove('open');
-            document.getElementById('detailPanel').classList.remove('open');
-        }
-
-        function renderDetailPanel(id) {
-            const p = people.find(x => x.id === id);
-            if (!p) return;
-            const role = p.type === 'helfer' ? 'Helfer:in' : p.type === 'senior' ? 'Senior:in' : 'Aktive:r Helfer:in';
-            const typeClass = p.type === 'helfer' ? 'helfer' : p.type === 'senior' ? 'senior' : 'aktiv';
-            const visits = demoVisits[id] || [];
-            const pastVisits = visits.filter(v => new Date(v.d) <= new Date()).sort((a, b) => new Date(b.d) - new Date(a.d));
-            const futureVisits = visits.filter(v => new Date(v.d) > new Date()).sort((a, b) => new Date(a.d) - new Date(b.d));
-
-            document.getElementById('detailContent').innerHTML = `
-                <div class="detail-hero">
-                    ${popupAvatarSVG(p.color).replace('popup-avatar', 'detail-hero-avatar')}
-                    <div>
-                        <div class="detail-hero-name">${p.name}</div>
-                        <span class="detail-hero-role ${typeClass}">${role}</span>
-                    </div>
-                </div>
-                <div class="detail-body">
-                    <div class="detail-section">
-                        <h4>📋 Übersicht</h4>
-                        <div class="detail-grid">
-                            <div class="detail-field"><div class="detail-field-label">Status</div><div class="detail-field-value"><span class="status-dot ${p.status}" style="display:inline-block;margin-right:6px"></span>${p.status.charAt(0).toUpperCase() + p.status.slice(1)}</div></div>
-                            <div class="detail-field"><div class="detail-field-label">Sprachen</div><div class="detail-field-value">${p.sprachen}</div></div>
-                            <div class="detail-field"><div class="detail-field-label">Zeitfenster</div><div class="detail-field-value">${formatZeitfenster(p.zeitfenster)}</div></div>
-                            <div class="detail-field"><div class="detail-field-label">Besuche gesamt</div><div class="detail-field-value">${pastVisits.length}</div></div>
-                        </div>
-                        <div class="detail-field" style="margin-top:10px"><div class="detail-field-label">Bio</div><div class="detail-field-value" style="font-weight:400;font-size:0.84rem;line-height:1.5">${p.bio}</div></div>
-                    </div>
-                    <div class="detail-section">
-                        <h4>🗓️ Wochenplan</h4>
-                        ${renderScheduleGrid(p)}
-                    </div>
-                    <div class="detail-section">
-                        <h4>📅 Kalender</h4>
-                        <div id="detailCalendar"></div>
-                    </div>
-                    <div class="detail-section">
-                        <h4>📝 Letzte Besuche</h4>
-                        <div class="visit-log">
-                            ${pastVisits.map(v => `<div class="visit-entry"><span class="visit-type-dot" style="background:var(--green)"></span><span class="visit-date">${formatDate(v.d)}</span><span class="visit-note">${v.note}</span></div>`).join('')}
-                            ${pastVisits.length === 0 ? '<div style="color:var(--text-secondary);font-size:0.82rem">Noch keine Besuche</div>' : ''}
-                        </div>
-                    </div>
-                    ${futureVisits.length > 0 ? `<div class="detail-section">
-                        <h4>🔜 Geplant</h4>
-                        <div class="visit-log">
-                            ${futureVisits.map(v => `<div class="visit-entry"><span class="visit-type-dot" style="background:var(--blue)"></span><span class="visit-date">${formatDate(v.d)}</span><span class="visit-note">${v.note}</span></div>`).join('')}
-                        </div>
-                    </div>` : ''}
-                </div>
-            `;
-            renderCalendar(id);
-        }
-
-        // ── Zeitfenster helpers ───────────────────────────────
-        function formatZeitfenster(slots) {
-            if (!slots || slots.length === 0) return 'Nach Absprache';
-            return slots.map(s => `${s.tag} ${s.von}–${s.bis}`).join(', ');
-        }
-
-        function renderScheduleGrid(person) {
-            const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-            const hours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
-            const typeClass = person.type === 'helfer' ? 'filled-helfer' : person.type === 'senior' ? 'filled-senior' : 'filled-aktiv';
-            const slots = person.zeitfenster || [];
-
-            function isSlotFilled(day, hour) {
-                return slots.some(s => s.tag === day && parseInt(s.von) <= hour && parseInt(s.bis) > hour);
+            function closeWindow(windowEl) {
+                windowEl.classList.add('hidden');
+                const anyWindowOpen = Array.from(windows).some(w => !w.classList.contains('hidden'));
+                if (!isDesktop && !anyWindowOpen) {
+                    if (dock) dock.classList.remove('hidden');
+                }
             }
 
-            let html = '<div class="schedule-grid">';
-            html += '<div></div>';
-            days.forEach(d => { html += `<div class="schedule-header">${d}</div>`; });
+            function makeWindowDraggable(windowEl) {
+                const header = windowEl.querySelector('.window-header');
+                if (!header) return;
+                let isDragging = false, offsetX, offsetY;
+                const onMouseDown = (e) => {
+                    if (!isDesktop) return;
+                    isDragging = true;
+                    const rect = windowEl.getBoundingClientRect();
+                    offsetX = e.clientX - rect.left;
+                    offsetY = e.clientY - rect.top;
+                    header.style.cursor = 'grabbing';
+                    openWindow(windowEl);
+                };
+                const onMouseMove = (e) => {
+                    if (!isDragging || !isDesktop) return;
+                    windowEl.style.left = `${e.clientX - offsetX}px`;
+                    windowEl.style.top = `${e.clientY - offsetY}px`;
+                };
+                const onMouseUp = () => {
+                    isDragging = false;
+                    if (header) header.style.cursor = 'move';
+                };
+                header.addEventListener('mousedown', onMouseDown);
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            }
 
-            hours.forEach(h => {
-                html += `<div class="schedule-time">${h}:00</div>`;
-                days.forEach(d => {
-                    const filled = isSlotFilled(d, h);
-                    html += `<div class="schedule-cell${filled ? ' ' + typeClass : ''}"></div>`;
+            function makeIconDraggable(iconEl) {
+                let isDragging = false, hasDragged = false, offsetX, offsetY;
+                iconEl.addEventListener('mousedown', (e) => {
+                    if (!isDesktop) return;
+                    isDragging = true; hasDragged = false;
+                    offsetX = e.clientX - iconEl.getBoundingClientRect().left;
+                    offsetY = e.clientY - iconEl.getBoundingClientRect().top;
+                    iconEl.style.cursor = 'grabbing';
+                    iconEl.style.zIndex = 101;
                 });
-            });
-            html += '</div>';
-            return html;
-        }
-
-        function formatDate(d) {
-            const dt = new Date(d);
-            return dt.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-        }
-
-        function renderCalendar(id) {
-            const visits = (demoVisits[id] || []).map(v => v.d);
-            const today = new Date();
-            const firstDay = new Date(detailCalYear, detailCalMonth, 1).getDay();
-            const daysInMonth = new Date(detailCalYear, detailCalMonth + 1, 0).getDate();
-            const monthName = new Date(detailCalYear, detailCalMonth).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
-            const startOffset = (firstDay + 6) % 7; // Monday start
-            const dayLabels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-
-            let html = `<div class="cal-header">
-                <button class="cal-nav" onclick="navCal(-1)">◀</button>
-                <span>${monthName.charAt(0).toUpperCase() + monthName.slice(1)}</span>
-                <button class="cal-nav" onclick="navCal(1)">▶</button>
-            </div><div class="cal-grid">`;
-            html += dayLabels.map(d => `<div class="cal-day-label">${d}</div>`).join('');
-            for (let i = 0; i < startOffset; i++) html += '<div class="cal-day empty"></div>';
-            for (let d = 1; d <= daysInMonth; d++) {
-                const dateStr = `${detailCalYear}-${String(detailCalMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                const isVisit = visits.includes(dateStr);
-                const isToday = d === today.getDate() && detailCalMonth === today.getMonth() && detailCalYear === today.getFullYear();
-                const isFuture = new Date(dateStr) > today;
-                let cls = 'cal-day';
-                if (isToday) cls += ' today';
-                if (isVisit && !isFuture) cls += ' visit';
-                if (isVisit && isFuture) cls += ' visit-blue';
-                html += `<div class="${cls}">${d}</div>`;
+                document.addEventListener('mousemove', (e) => {
+                    if (!isDragging || !isDesktop) return;
+                    hasDragged = true;
+                    iconEl.style.left = `${e.clientX - offsetX}px`;
+                    iconEl.style.top = `${e.clientY - offsetY}px`;
+                });
+                document.addEventListener('mouseup', () => {
+                    if (!isDesktop) return;
+                    isDragging = false;
+                    iconEl.style.cursor = 'grab';
+                    iconEl.style.zIndex = 100;
+                    setTimeout(() => { hasDragged = false; }, 0);
+                });
+                return () => hasDragged;
             }
-            html += '</div>';
-            html += '<div class="cal-legend"><span><span class="cal-legend-dot" style="background:var(--orange-light)"></span> Besuch</span><span><span class="cal-legend-dot" style="background:var(--blue-light)"></span> Geplant</span><span><span class="cal-legend-dot" style="background:#f0f0f5"></span> Heute</span></div>';
-            document.getElementById('detailCalendar').innerHTML = html;
-        }
 
-        function navCal(dir) {
-            detailCalMonth += dir;
-            if (detailCalMonth > 11) { detailCalMonth = 0; detailCalYear++; }
-            if (detailCalMonth < 0) { detailCalMonth = 11; detailCalYear--; }
-            renderCalendar(detailPersonId);
-        }
+            function injectContent() {
+                const windowHeaderHTML = (title) => `<div class="window-header"><div class="traffic-lights"><div class="traffic-light close"></div></div><span class="flex-grow text-center pr-8">${title}</span></div>`;
+                document.getElementById('cv-window').querySelector('.window-content').innerHTML = `${windowHeaderHTML('CV - Leonard Zirk')}<div class="window-body"><div class="text-center mb-6"><h1 class="text-3xl font-bold text-white">Leonard Zirk</h1><p class="text-xl text-gray-300">Creative Strategist & Technologist</p></div><div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center text-sm mb-6"><div><strong class="block text-gray-400">PHONE</strong>+491637150123</div><div><strong class="block text-gray-400">ADDRESS</strong>Transvaalstraße 6, 13351</div><div><strong class="block text-gray-400">EMAIL</strong>leonard.zirk@gmail.com</div></div><h2>About</h2><p class="italic">"I turn complex science into captivating stories. As a scientist, I'm trained in rigorous data analysis; as a creative marketer, I've built engaging social media campaigns for global brands. My passion is bridging the gap between the theoretical and the applicable, and I'm eager to bring my unique blend of analytical and creative skills to a dynamic team."</p><h2>Work Experience</h2><p><strong>Creative Strategist</strong> | Ozmoze Gmbh<br>Developed social media and event content strategies for clients including Telekom, Tinder, and Duolingo. Crafted pitch decks for potential clients like Funk, Huawei, and Spotify.</p><p><strong>Social Media Marketer</strong> | Modulor Gmbh<br>Successfully oversaw and enhanced the comprehensive management of the organization's social media channels.</p><p><strong>Researcher</strong> | Klipp Linding Science<br>Engineered a computational pipeline in Julia for system modeling in molecular science, integrating single-cell transcriptomic data with spatially-resolved validation from smFISH imaging.</p><h2>Education</h2><p><strong>Bachelor of Science - Biology</strong> (2020-2025)<br>Core coursework in molecular biology, genetics, and quantitative biophysics, with a focus on computational methods (R, Python).</p><p><strong>Bachelor of Science - Psychology</strong> (2020 - 2024)<br>Specialized in cognitive psychology and behavioral neuroscience, with an emphasis on quantitative research design and statistical analysis (SPSS, R).</p><p><strong>Thesis Project: Hybrid Model</strong><br>Developed a hybrid computational model integrating mechanistic differential equations with data-driven machine learning algorithms to predict cellular responses using Julia.</p><h2>Skills</h2><p>Adaptive, Communication, Teamwork, Responsibility, Creativity, Problem-solving</p><h2>Highlights</h2><p><strong>01</strong> Threw a Project X themed Party for 1500 People for Tinder.<br><strong>02</strong> Supported a Campaign reaching half of Germany.<br><strong>03</strong> Collaborated within 5 Research Groups.<br><strong>04</strong> Enjoyed the moment.</p></div>`;
+                document.getElementById('contact-window').querySelector('.window-content').innerHTML = `${windowHeaderHTML('Contact Me')}<div class="window-body"><form><div class="mb-4"><label class="block mb-2 text-ccc" for="name">Name</label><input class="w-full bg-black/30 border border-white/20 rounded-lg p-2 text-white" type="text" id="name" required></div><div class="mb-4"><label class="block mb-2 text-ccc" for="email">Your Email</label><input class="w-full bg-black/30 border border-white/20 rounded-lg p-2 text-white" type="email" id="email" required></div><div class="mb-4"><label class="block mb-2 text-ccc" for="message">Message</label><textarea class="w-full bg-black/30 border border-white/20 rounded-lg p-2 text-white" id="message" rows="4" required></textarea></div><button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded-lg font-medium">Send</button></form></div>`;
+                document.getElementById('koplin-window').querySelector('.window-content').innerHTML = `${windowHeaderHTML('Dr. Koplin')}<div class="window-body p-4 flex gap-4 items-start"><div data-url="https://www.tiktok.com/@drkoplin" class="mobile-icon link-icon"><div class="icon-bg"><img src="https://ik.imagekit.io/ex6ksvxsvk/tik%20tok%20icon.png?updatedAt=1752678704069" alt="TikTok Icon"></div><p>Dr. Koplin TikTok</p></div><div id="readme-file-icon" class="mobile-icon"><div class="icon-bg"><i class="fas fa-file-lines"></i></div><p>read me.txt</p></div></div>`;
+                document.getElementById('readme-window').querySelector('.window-content').innerHTML = `${windowHeaderHTML('read me.txt')}<div class="window-body"><p>This is the read me file for Dr. Koplin.</p></div>`;
+                document.getElementById('readme-desktop-window').querySelector('.window-content').innerHTML = `${windowHeaderHTML('read me.txt')}<div class="window-body"><h2>Welcome!</h2><p>This is an interactive portfolio. Drag the windows around on a desktop, or swipe through the icons on mobile.</p><p>Feel free to explore the different folders to learn more about my work and projects.</p></div>`;
+                document.getElementById('duolingo-window').querySelector('.window-content').innerHTML = `${windowHeaderHTML('Duolingo')}<div class="window-body duolingo-body"><div class="duolingo-progress-bar"><div class="duolingo-progress"></div></div><div class="duolingo-mascot-container"><img src="https://ik.imagekit.io/ex6ksvxsvk/duo%20app.png?updatedAt=1753448064337" alt="Duo the Owl" class="w-20 h-auto"><div class="duolingo-speech-bubble">What did Leo do for Duolingo?</div></div><div class="duolingo-options"><button class="duolingo-option" data-correct="false"><span>🧠</span><span>Spend time productively</span></button><button class="duolingo-option" data-correct="false"><span>🚀</span><span>Boost my career</span></button><button class="duolingo-option" data-correct="true"><span>💡</span><span>I supported the conceptualization of Social Media Content during my Time at Ozmoze.</span></button><button class="duolingo-option" data-correct="false"><span>🎓</span><span>Support my education</span></button></div><button class="duolingo-continue-btn">Continue</button></div>`;
+                document.getElementById('tinder-window').querySelector('.window-content').innerHTML = `${windowHeaderHTML('Tinder')}<div class="window-body p-4 flex flex-wrap gap-4 items-start"><div id="tinder-party-icon" class="mobile-icon"><div class="icon-bg"><i class="fas fa-folder"></i></div><p>Tinder Party</p></div><div id="tinder-swipe-icon" class="mobile-icon"><div class="icon-bg"><img src="https://ik.imagekit.io/ex6ksvxsvk/tinder%20app.png?updatedAt=1753448867039" alt="Tinder App"></div><p>Tinder App</p></div></div>`;
+                document.getElementById('tinder-party-window').querySelector('.window-content').innerHTML = `${windowHeaderHTML('Tinder Party')}<div class="window-body p-4 flex gap-4 items-start"><div class="mobile-icon"><div class="icon-bg"><i class="fas fa-image"></i></div><p>placeholder.png</p></div></div>`;
+                document.getElementById('tinder-swipe-window').querySelector('.window-content').innerHTML = `${windowHeaderHTML('')}<div class="window-body tinder-body"><div class="tinder-header"><img src="https://ik.imagekit.io/ex6ksvxsvk/tinder%20app.png?updatedAt=1753448867039" alt="Tinder Logo"></div><div class="tinder-stack"><div class="tinder-card"><img class="tinder-card-img" src="https://ik.imagekit.io/ex6ksvxsvk/d81839c1-024b-4f7a-b037-472795553a6a.JPG" alt="Profile Picture"><div class="tinder-card-info"><h3>Leonard Zirk</h3><p>Creative Strategist & Scientist</p></div></div></div><div class="tinder-controls"><button class="tinder-btn dislike" id="dislike-btn"><i class="fas fa-times"></i></button><button class="tinder-btn like" id="like-btn"><i class="fas fa-heart"></i></button></div></div>`;
+                document.getElementById('modulor-window').querySelector('.window-content').innerHTML = `${windowHeaderHTML('Modulor')}<div class="window-body p-4 flex flex-wrap gap-4 items-start"><div data-url="https://www.instagram.com/modulorberlin" class="mobile-icon link-icon"><div class="icon-bg"><img src="https://ik.imagekit.io/ex6ksvxsvk/instagramicon.webp?updatedAt=1752678971026" alt="Instagram Icon"></div><p>Instagram</p></div><div data-url="https://www.tiktok.com/@modulor_de" class="mobile-icon link-icon"><div class="icon-bg"><img src="https://ik.imagekit.io/ex6ksvxsvk/tik%20tok%20icon.png?updatedAt=1752678704069" alt="TikTok Icon"></div><p>TikTok</p></div></div>`;
+            }
+
+            function setupPagination() {
+                const container = document.getElementById('mobile-icons-container');
+                const dotsContainer = document.getElementById('pagination-dots');
+                const prevBtn = document.getElementById('prev-page');
+                const nextBtn = document.getElementById('next-page');
+                const pages = container.querySelectorAll('.mobile-page');
+                if (pages.length <= 1) {
+                    document.getElementById('pagination-container').style.display = 'none';
+                    return;
+                }
+                dotsContainer.innerHTML = '';
+                pages.forEach(() => { dotsContainer.innerHTML += `<div class="pagination-dot"></div>`; });
+                const dots = dotsContainer.querySelectorAll('.pagination-dot');
+                const updatePaginationControls = () => {
+                    const pageIndex = Math.round(container.scrollLeft / container.clientWidth);
+                    dots.forEach((dot, index) => dot.classList.toggle('active', index === pageIndex));
+                    const scrollLeft = container.scrollLeft;
+                    const scrollWidth = container.scrollWidth;
+                    const clientWidth = container.clientWidth;
+                    prevBtn.classList.toggle('hidden', scrollLeft < 10);
+                    nextBtn.classList.toggle('hidden', scrollLeft + clientWidth >= scrollWidth - 10);
+                };
+                container.addEventListener('scroll', updatePaginationControls, { passive: true });
+                prevBtn.addEventListener('click', () => { container.scrollBy({ left: -container.clientWidth }); });
+                nextBtn.addEventListener('click', () => { container.scrollBy({ left: container.clientWidth }); });
+                updatePaginationControls();
+            }
+
+            function setupEventListeners() {
+                windows.forEach(w => {
+                    w.querySelectorAll('.close').forEach(btn => btn.addEventListener('click', () => closeWindow(w)));
+                });
+                document.querySelectorAll('.link-icon').forEach(icon => {
+                    const wasDragged = isDesktop && icon.classList.contains('desktop-icon') ? makeIconDraggable(icon) : () => false;
+                    icon.addEventListener('click', () => {
+                        if (!wasDragged()) { window.open(icon.dataset.url, '_blank'); }
+                    });
+                });
+                const iconWindowMap = {
+                    'cv-dock-icon': 'cv-window', 'contact-dock-icon': 'contact-window',
+                    'koplin-icon-desktop': 'koplin-window', 'koplin-icon-mobile': 'koplin-window',
+                    'readme-desktop-icon': 'readme-desktop-window',
+                    'duolingo-icon-desktop': 'duolingo-window', 'duolingo-icon-mobile': 'duolingo-window',
+                    'tinder-icon-desktop': 'tinder-window', 'tinder-icon-mobile': 'tinder-window',
+                    'modulor-icon-desktop': 'modulor-window', 'modulor-icon-mobile': 'modulor-window'
+                };
+                for (const [iconId, windowId] of Object.entries(iconWindowMap)) {
+                    const iconEl = document.getElementById(iconId);
+                    const windowEl = document.getElementById(windowId);
+                    if (iconEl && windowEl) {
+                        if (isDesktop && iconEl.classList.contains('desktop-icon')) {
+                            const wasDragged = makeIconDraggable(iconEl);
+                            iconEl.addEventListener('click', () => { if (!wasDragged()) openWindow(windowEl); });
+                        } else {
+                            iconEl.addEventListener('click', () => openWindow(windowEl));
+                        }
+                    }
+                }
+                const readmeWindow = document.getElementById('readme-window');
+                document.getElementById('koplin-window').querySelector('#readme-file-icon')?.addEventListener('click', () => openWindow(readmeWindow));
+                
+                const tinderPartyWindow = document.getElementById('tinder-party-window');
+                document.getElementById('tinder-window').querySelector('#tinder-party-icon')?.addEventListener('click', () => openWindow(tinderPartyWindow));
+                
+                const tinderSwipeWindow = document.getElementById('tinder-swipe-window');
+                document.getElementById('tinder-window').querySelector('#tinder-swipe-icon')?.addEventListener('click', () => openWindow(tinderSwipeWindow));
+
+                if (isDesktop) { windows.forEach(makeWindowDraggable); }
+                const contactForm = document.getElementById('contact-window').querySelector('form');
+                contactForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const name = contactForm.querySelector('#name').value;
+                    const email = contactForm.querySelector('#email').value;
+                    const message = contactForm.querySelector('#message').value;
+                    const mailtoLink = `mailto:leonard.zirk@gmail.com?subject=${encodeURIComponent(`Message from ${name}`)}&body=${encodeURIComponent(`From: ${name} <${email}>\n\n${message}`)}`;
+                    window.open(mailtoLink);
+                });
+                
+                const duoWindow = document.getElementById('duolingo-window');
+                const duoOptions = duoWindow.querySelectorAll('.duolingo-option');
+                const duoContinueBtn = duoWindow.querySelector('.duolingo-continue-btn');
+                let selectedOption = null;
+                duoOptions.forEach(option => {
+                    option.addEventListener('click', () => {
+                        duoOptions.forEach(opt => opt.classList.remove('selected', 'correct', 'incorrect'));
+                        option.classList.add('selected');
+                        selectedOption = option;
+                        duoContinueBtn.classList.add('active');
+                    });
+                });
+                duoContinueBtn.addEventListener('click', () => {
+                    if (!selectedOption) return;
+                    const isCorrect = selectedOption.dataset.correct === 'true';
+                    if (isCorrect) { selectedOption.classList.add('correct'); } 
+                    else {
+                        selectedOption.classList.add('incorrect');
+                        setTimeout(() => { selectedOption.classList.remove('incorrect'); }, 500);
+                    }
+                    duoContinueBtn.classList.remove('active');
+                });
+
+                // Tinder Swipe Logic
+                const tinderCard = document.querySelector('.tinder-card');
+                const likeBtn = document.getElementById('like-btn');
+                const dislikeBtn = document.getElementById('dislike-btn');
+                let isTinderDragging = false, startX, tinderOffsetX = 0;
+
+                const onTinderPointerDown = (e) => {
+                    isTinderDragging = true;
+                    startX = e.clientX || e.touches[0].clientX;
+                    tinderCard.classList.add('dragging');
+                };
+
+                const onTinderPointerMove = (e) => {
+                    if (!isTinderDragging) return;
+                    const currentX = e.clientX || e.touches[0].clientX;
+                    tinderOffsetX = currentX - startX;
+                    const rotation = tinderOffsetX / 20;
+                    tinderCard.style.transform = `translateX(${tinderOffsetX}px) rotate(${rotation}deg)`;
+                };
+
+                const onTinderPointerUp = (e) => {
+                    isTinderDragging = false;
+                    tinderCard.classList.remove('dragging');
+                    if (Math.abs(tinderOffsetX) > 100) {
+                        const direction = tinderOffsetX > 0 ? 1 : -1;
+                        swipe(direction);
+                    } else {
+                        tinderCard.style.transform = '';
+                    }
+                    tinderOffsetX = 0;
+                };
+
+                tinderCard.addEventListener('mousedown', onTinderPointerDown);
+                document.addEventListener('mousemove', onTinderPointerMove);
+                document.addEventListener('mouseup', onTinderPointerUp);
+                tinderCard.addEventListener('touchstart', onTinderPointerDown, { passive: true });
+                document.addEventListener('touchmove', onTinderPointerMove, { passive: true });
+                document.addEventListener('touchend', onTinderPointerUp);
+
+                const swipe = (direction) => {
+                    const flyOutX = direction * window.innerWidth;
+                    tinderCard.style.transform = `translateX(${flyOutX}px) rotate(${direction * 30}deg)`;
+                    tinderCard.style.opacity = '0';
+                    if (direction === 1) { // Swiped right
+                        setTimeout(() => {
+                           openWindow(document.getElementById('contact-window'));
+                        }, 300);
+                    }
+                     setTimeout(() => {
+                        tinderCard.style.transform = '';
+                        tinderCard.style.opacity = '1';
+                    }, 500);
+                };
+
+                likeBtn.addEventListener('click', () => swipe(1));
+                dislikeBtn.addEventListener('click', () => swipe(-1));
+            }
+
+            function handleResize() {
+                isDesktop = window.innerWidth >= 1024;
+                const desktopIconContainer = document.getElementById('desktop-icons-container');
+                const mobileViewWrapper = document.getElementById('mobile-view-wrapper');
+                if (isDesktop) {
+                    desktopIconContainer.classList.remove('hidden');
+                    mobileViewWrapper.classList.add('lg:hidden');
+                } else {
+                    desktopIconContainer.classList.add('hidden');
+                    mobileViewWrapper.classList.remove('lg:hidden');
+                }
+                windows.forEach(w => {
+                    if (!w.classList.contains('hidden')) {
+                        if (isDesktop) { w.classList.add('lg:window-desktop'); } 
+                        else { w.classList.remove('lg:window-desktop'); }
+                    }
+                });
+            }
+
+            injectContent();
+            setupEventListeners();
+            setupPagination();
+            window.addEventListener('resize', handleResize);
+            handleResize();
+        });
     </script>
-</body>
 
+</body>
 </html>
