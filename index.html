@@ -679,6 +679,148 @@
         .tinder-btn:hover { transform: scale(1.08); }
         .tinder-btn.like { color: #4bde97; }
         .tinder-btn.dislike { color: #fd5068; }
+
+        /* ====== LOCK SCREEN ====== */
+        #lock-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 8000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            overflow: hidden;
+            opacity: 0;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        #lock-screen.visible {
+            opacity: 1;
+        }
+        #lock-screen.dismissing {
+            opacity: 0;
+            transform: scale(1.1);
+        }
+        #lock-screen-bg {
+            position: absolute;
+            inset: 0;
+            background-image: url('https://ik.imagekit.io/ex6ksvxsvk/d81839c1-024b-4f7a-b037-472795553a6a.JPG');
+            background-size: cover;
+            background-position: center top;
+            filter: brightness(0.5);
+            z-index: 0;
+        }
+        .lock-content {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .lock-top {
+            padding-top: max(3rem, env(safe-area-inset-top, 3rem));
+        }
+        .lock-status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 8px 20px 0;
+            font-size: 12px;
+            color: white;
+            font-weight: 600;
+        }
+        .lock-time {
+            font-size: clamp(4rem, 18vw, 6rem);
+            font-weight: 200;
+            color: white;
+            letter-spacing: -0.03em;
+            line-height: 1;
+            margin-top: 0.5rem;
+            text-shadow: 0 2px 20px rgba(0,0,0,0.3);
+        }
+        .lock-date {
+            font-size: clamp(1rem, 4vw, 1.35rem);
+            font-weight: 400;
+            color: rgba(255,255,255,0.9);
+            margin-top: 0.25rem;
+            text-shadow: 0 1px 10px rgba(0,0,0,0.3);
+        }
+        .lock-bottom {
+            padding-bottom: max(2.5rem, env(safe-area-inset-bottom, 2.5rem));
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        /* Slide to Unlock Track */
+        .slide-track {
+            width: calc(100% - 3rem);
+            max-width: 320px;
+            height: 56px;
+            background: rgba(255,255,255,0.12);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 28px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .slide-text {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            font-weight: 500;
+            letter-spacing: 0.06em;
+            color: rgba(255,255,255,0.6);
+            pointer-events: none;
+            animation: slideTextShimmer 2.5s ease-in-out infinite;
+        }
+        @keyframes slideTextShimmer {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        .slide-thumb {
+            position: absolute;
+            left: 3px;
+            top: 3px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            touch-action: none;
+            z-index: 2;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transition: left 0.15s ease;
+        }
+        .slide-thumb.dragging {
+            transition: none;
+            cursor: grabbing;
+        }
+        .slide-thumb i {
+            color: #333;
+            font-size: 1.1rem;
+        }
+        .slide-fill {
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            background: rgba(255,255,255,0.08);
+            border-radius: 28px;
+            pointer-events: none;
+            transition: width 0.15s ease;
+        }
+        .slide-fill.dragging {
+            transition: none;
+        }
     </style>
 </head>
 <body class="bg-black">
@@ -690,6 +832,32 @@
         </svg>
         <div class="boot-progress-track">
             <div class="boot-progress-fill"></div>
+        </div>
+    </div>
+
+    <!-- Lock Screen (Mobile Only) -->
+    <div id="lock-screen">
+        <div id="lock-screen-bg"></div>
+        <div class="lock-content lock-top">
+            <div class="lock-status-bar">
+                <span>Leonard Zirk</span>
+                <div style="display:flex;gap:6px;align-items:center;">
+                    <i class="fas fa-signal" style="font-size:11px"></i>
+                    <i class="fas fa-wifi" style="font-size:11px"></i>
+                    <i class="fas fa-battery-full" style="font-size:13px"></i>
+                </div>
+            </div>
+            <div class="lock-time" id="lock-time">00:00</div>
+            <div class="lock-date" id="lock-date">Monday, January 1</div>
+        </div>
+        <div class="lock-content lock-bottom">
+            <div class="slide-track" id="slide-track">
+                <div class="slide-fill" id="slide-fill"></div>
+                <div class="slide-thumb" id="slide-thumb">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+                <div class="slide-text">slide to unlock</div>
+            </div>
         </div>
     </div>
 
@@ -854,11 +1022,97 @@
 
         setTimeout(() => {
             bootSplash.classList.add('fade-out');
-            revealDesktop();
+            // On desktop: reveal desktop immediately
+            // On mobile: show lock screen (user must slide to unlock)
+            if (isDesktop) {
+                revealDesktop();
+            } else {
+                lockScreen.classList.add('visible');
+            }
             setTimeout(() => {
                 bootSplash.style.display = 'none';
             }, 600);
         }, BOOT_DURATION);
+
+        // ===== LOCK SCREEN CLOCK =====
+        const lockTimeEl = document.getElementById('lock-time');
+        const lockDateEl = document.getElementById('lock-date');
+        function updateLockClock() {
+            const now = new Date();
+            const h = now.getHours().toString().padStart(2, '0');
+            const m = now.getMinutes().toString().padStart(2, '0');
+            lockTimeEl.textContent = `${h}:${m}`;
+            const opts = { weekday: 'long', month: 'long', day: 'numeric' };
+            lockDateEl.textContent = now.toLocaleDateString('en-US', opts);
+        }
+        updateLockClock();
+        setInterval(updateLockClock, 1000);
+
+        // ===== SLIDE TO UNLOCK =====
+        const lockScreen = document.getElementById('lock-screen');
+        const slideTrack = document.getElementById('slide-track');
+        const slideThumb = document.getElementById('slide-thumb');
+        const slideFill = document.getElementById('slide-fill');
+        let isSliding = false;
+        let slideStartX = 0;
+        const UNLOCK_THRESHOLD = 0.8;
+
+        function getMaxSlide() {
+            return slideTrack.offsetWidth - slideThumb.offsetWidth - 6;
+        }
+
+        function onSlideStart(e) {
+            isSliding = true;
+            slideStartX = (e.clientX || e.touches[0].clientX);
+            slideThumb.classList.add('dragging');
+            slideFill.classList.add('dragging');
+            e.preventDefault();
+        }
+
+        function onSlideMove(e) {
+            if (!isSliding) return;
+            const currentX = (e.clientX || e.touches[0].clientX);
+            const diff = currentX - slideStartX;
+            const max = getMaxSlide();
+            const clamped = Math.max(0, Math.min(diff, max));
+            slideThumb.style.left = `${3 + clamped}px`;
+            slideFill.style.width = `${clamped + 53}px`;
+        }
+
+        function onSlideEnd() {
+            if (!isSliding) return;
+            isSliding = false;
+            slideThumb.classList.remove('dragging');
+            slideFill.classList.remove('dragging');
+            const currentLeft = parseFloat(slideThumb.style.left) - 3;
+            const max = getMaxSlide();
+
+            if (currentLeft / max >= UNLOCK_THRESHOLD) {
+                // Unlocked!
+                slideThumb.style.left = `${3 + max}px`;
+                slideFill.style.width = `${max + 53}px`;
+                unlockScreen();
+            } else {
+                // Snap back
+                slideThumb.style.left = '3px';
+                slideFill.style.width = '0px';
+            }
+        }
+
+        function unlockScreen() {
+            lockScreen.classList.add('dismissing');
+            setTimeout(() => {
+                lockScreen.style.display = 'none';
+                revealDesktop();
+            }, 500);
+        }
+
+        slideThumb.addEventListener('mousedown', onSlideStart);
+        document.addEventListener('mousemove', onSlideMove);
+        document.addEventListener('mouseup', onSlideEnd);
+        slideThumb.addEventListener('touchstart', onSlideStart, { passive: false });
+        document.addEventListener('touchmove', onSlideMove, { passive: false });
+        document.addEventListener('touchend', onSlideEnd);
 
         // ===== RANDOMIZE DESKTOP ICON POSITIONS =====
         function randomizeDesktopIcons() {
